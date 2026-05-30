@@ -51,7 +51,8 @@ function cleanUrl(url) {
 
 function getYtDlpPath() {
   const mp = require.resolve('@distube/yt-dlp');
-  return path.join(path.dirname(mp), '..', 'bin', 'yt-dlp.exe');
+  const base = path.join(path.dirname(mp), '..', 'bin', 'yt-dlp');
+  return process.platform === 'win32' ? base + '.exe' : base;
 }
 
 function jsonWithTimeout(url, flags, ms) {
