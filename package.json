@@ -1,0 +1,29 @@
+{
+  "name": "omnitool",
+  "version": "1.0.0",
+  "description": "OmniTool - Her Şey İçin Tek Araç",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@distube/yt-dlp": "^2.0.1",
+    "@distube/ytdl-core": "^4.16.12",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "adm-zip": "^0.5.17",
+    "archiver": "^6.0.2",
+    "cors": "^2.8.6",
+    "docx": "^9.7.0",
+    "express": "^5.2.1",
+    "ffmpeg-static": "^5.3.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "mammoth": "^1.12.0",
+    "multer": "^2.1.1",
+    "pdf-lib": "^1.17.1"
+  }
+}
