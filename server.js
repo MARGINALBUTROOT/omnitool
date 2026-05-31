@@ -462,16 +462,16 @@ app.post('/api/send-mail', upload.single('attachment'), async (req, res) => {
   }
 });
 
-app.post('/api/gif-create', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'images', maxCount: 20 }]), async (req, res) => {
+app.post('/api/gif-create', upload.any(), async (req, res) => {
   try {
     const mode = req.body.mode || 'video';
     const baseName = req.body.title ? req.body.title.replace(/[^\w\s]/gi, '').trim().substring(0, 50) : 'gif';
     const fps = parseInt(req.body.fps) || 10;
     const width = parseInt(req.body.width) || 480;
-    let inputPath, outName, outPath;
     const outNameBase = `${baseName}_gif_${Date.now()}`;
-    outName = `${outNameBase}.gif`;
-    outPath = path.join(prc, outName);
+    const outName = `${outNameBase}.gif`;
+    const outPath = path.join(prc, outName);
+    const allFiles = req.files || [];
 
     if (mode === 'text') {
       const text = req.body.text || 'GIF';
@@ -494,22 +494,24 @@ app.post('/api/gif-create', upload.fields([{ name: 'video', maxCount: 1 }, { nam
         p.on('error', reject);
       });
       fs.renameSync(tmpGif, outPath);
-    } else if (mode === 'images' && req.files && req.files.images) {
-      const files = req.files.images;
+    } else if (mode === 'images') {
+      const images = allFiles.filter(f => f.fieldname === 'images');
+      if (images.length < 2) {
+        allFiles.forEach(f => safeUnlink(f.path));
+        return res.status(400).json({ error: 'En az 2 resim gerekli, ' + images.length + ' yüklendi' });
+      }
       const duration = parseFloat(req.body.duration) || 2;
-      const inputs = files.map((f, i) => ['-loop', '1', '-t', String(duration / files.length || 0.5), '-i', f.path]);
-      const concat = [];
-      for (let i = 0; i < files.length; i++) concat.push(`[${i}:v]`);
-      const filter = `${concat.join('')}concat=n=${files.length}:v=1:a=0,scale=${width}:-1,fps=${fps}`;
+      const perDuration = duration / images.length;
       const args = [];
-      for (const inp of inputs) args.push(...inp);
-      args.push('-filter_complex', filter, '-t', String(duration), '-y', outPath);
+      for (const f of images) args.push('-loop', '1', '-t', String(perDuration), '-i', f.path);
+      const labels = images.map((_, i) => `[${i}:v]`).join('');
+      args.push('-filter_complex', `${labels}concat=n=${images.length}:v=1:a=0,scale=${width}:-1,fps=${fps}`, '-t', String(duration), '-y', outPath);
       await new Promise((resolve, reject) => {
         const p = spawn(ffmpegPath, args);
         let err = '';
         p.stderr.on('data', d => err += d);
         p.on('close', c => {
-          files.forEach(f => safeUnlink(f.path));
+          images.forEach(f => safeUnlink(f.path));
           c === 0 ? resolve() : reject(new Error(err || 'GIF oluşturma hatası'));
         });
         p.on('error', reject);
