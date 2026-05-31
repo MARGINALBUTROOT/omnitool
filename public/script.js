@@ -156,7 +156,7 @@ convertBtn.addEventListener('click', async () => {
 
 sendToTrimBtn.addEventListener('click', () => {
   if (!convUrlValue) return;
-  document.querySelectorAll('.tab-btn')[8].click();
+  document.querySelectorAll('.tab-btn')[7].click();
   loadTrimVideo(convUrlValue, convTitleText);
 });
 
@@ -960,116 +960,4 @@ mailSendBtn.addEventListener('click', async () => {
     mailProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı (60sn)' : err.message);
     mailSendBtn.disabled = false;
   }
-});
-
-// ---- GIF CREATOR ----
-const gifUrl = document.getElementById('gifUrl');
-const gifVideoFile = document.getElementById('gifVideoFile');
-const gifVideoSelectBtn = document.getElementById('gifVideoSelectBtn');
-const gifVideoInfo = document.getElementById('gifVideoInfo');
-const gifVideoFileName = document.getElementById('gifVideoFileName');
-const gifImagesFile = document.getElementById('gifImagesFile');
-const gifImagesSelectBtn = document.getElementById('gifImagesSelectBtn');
-const gifImagesList = document.getElementById('gifImagesList');
-const gifText = document.getElementById('gifText');
-const gifBgColor = document.getElementById('gifBgColor');
-const gifTextColor = document.getElementById('gifTextColor');
-const gifDuration = document.getElementById('gifDuration');
-const gifFps = document.getElementById('gifFps');
-const gifWidth = document.getElementById('gifWidth');
-const gifCreateBtn = document.getElementById('gifCreateBtn');
-const gifError = document.getElementById('gifError');
-const gifProgress = document.getElementById('gifProgress');
-const gifProgressFill = document.getElementById('gifProgressFill');
-const gifProgressText = document.getElementById('gifProgressText');
-const gifResult = document.getElementById('gifResult');
-const gifResultText = document.getElementById('gifResultText');
-const gifDownloadBtn = document.getElementById('gifDownloadBtn');
-
-let gifFile = null;
-let gifImageFiles = [];
-let gifUrlValue = '';
-let gifAbort = null;
-
-document.querySelectorAll('input[name="gifMode"]').forEach(r => r.addEventListener('change', () => {
-  const m = document.querySelector('input[name="gifMode"]:checked').value;
-  document.getElementById('gifVideoSection').classList.toggle('hidden', m !== 'video');
-  document.getElementById('gifImagesSection').classList.toggle('hidden', m !== 'images');
-  document.getElementById('gifTextSection').classList.toggle('hidden', m !== 'text');
-}));
-
-gifVideoSelectBtn.addEventListener('click', () => gifVideoFile.click());
-gifVideoFile.addEventListener('change', e => {
-  if (e.target.files.length > 0) { gifFile = e.target.files[0]; gifUrlValue = ''; gifVideoFileName.textContent = '📁 ' + gifFile.name; gifVideoInfo.classList.remove('hidden'); }
-});
-gifImagesSelectBtn.addEventListener('click', () => gifImagesFile.click());
-gifImagesFile.addEventListener('change', e => {
-  gifImageFiles = Array.from(e.target.files);
-  gifImagesList.textContent = '📷 ' + gifImageFiles.length + ' resim seçildi';
-});
-
-gifCreateBtn.addEventListener('click', async () => {
-  hideError(gifError);
-  const mode = document.querySelector('input[name="gifMode"]:checked').value;
-  const duration = parseFloat(gifDuration.value) || 3;
-  const fps = parseInt(gifFps.value) || 10;
-  const width = parseInt(gifWidth.value) || 480;
-  gifCreateBtn.disabled = true;
-  gifProgress.classList.remove('hidden');
-  gifResult.classList.add('hidden');
-  gifProgressFill.style.width = '5%';
-  gifProgressText.textContent = 'GIF oluşturuluyor...';
-  gifAbort = new AbortController();
-  try {
-    const form = new FormData();
-    form.append('mode', mode);
-    form.append('duration', String(duration));
-    form.append('fps', String(fps));
-    form.append('width', String(width));
-
-    if (mode === 'video') {
-      if (gifFile) form.append('video', gifFile);
-      else if (gifUrl.value.trim()) form.append('url', gifUrl.value.trim());
-      else { showError(gifError, 'Video URL girin veya dosya yükleyin'); gifCreateBtn.disabled = false; return; }
-    } else if (mode === 'images') {
-      if (gifImageFiles.length < 1) { showError(gifError, 'En az 1 resim seçin'); gifCreateBtn.disabled = false; return; }
-      for (const f of gifImageFiles) form.append('images', f);
-    } else {
-      if (!gifText.value.trim()) { showError(gifError, 'GIF yazısı girin'); gifCreateBtn.disabled = false; return; }
-      form.append('text', gifText.value.trim());
-      form.append('bgColor', gifBgColor.value);
-      form.append('textColor', gifTextColor.value);
-      form.append('anim', document.querySelector('input[name="gifAnim"]:checked').value);
-    }
-    const res = await fetch('/api/gif-create', { method: 'POST', body: form, signal: gifAbort.signal });
-    const data = await res.json();
-    if (!res.ok) { gifProgressText.textContent = 'Hata: ' + data.error; gifCancel(); return; }
-    gifProgressFill.style.width = '90%';
-    gifProgressText.textContent = 'Hazırlanıyor...';
-    gifResult.classList.remove('hidden');
-    gifDownloadBtn.onclick = () => {
-      const a = document.createElement('a');
-      a.href = '/api/download/' + data.file;
-      a.download = data.title + '.gif';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    };
-    setTimeout(() => {
-      gifProgressFill.style.width = '100%';
-      gifProgressText.textContent = '✅ GIF hazır!';
-      setTimeout(() => { gifProgress.classList.add('hidden'); gifProgressFill.style.width = '0%'; gifCancel(); }, 3000);
-    }, 500);
-  } catch (err) {
-    if (err.name === 'AbortError') { gifProgressText.textContent = '⚠ İptal edildi'; } else { gifProgressText.textContent = 'Hata: ' + err.message; }
-    gifCancel();
-  }
-});
-
-function gifCancel() {
-  gifCreateBtn.disabled = false;
-  gifAbort = null;
-}
-
-const gifCancelBtn = document.getElementById('gifCancelBtn');
-gifCancelBtn.addEventListener('click', () => {
-  if (gifAbort) { gifAbort.abort(); gifProgressText.textContent = '⚠ İptal ediliyor...'; gifCancelBtn.disabled = true; }
 });

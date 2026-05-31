@@ -21,7 +21,7 @@
       <button class="tab-btn" data-tab="editor">Belge Düzenleyici</button>
       <button class="tab-btn" data-tab="stream">Yayın Araçları</button>
       <button class="tab-btn" data-tab="mail">Mail Araçları</button>
-      <button class="tab-btn" data-tab="gif">GIF Oluşturucu</button>
+
       <button class="tab-btn" data-tab="trim">Video Kesici</button>
     </div>
 
@@ -386,99 +386,6 @@
       </div>
     </section>
 
-    <!-- GIF TAB -->
-    <section id="tab-gif" class="tab-content">
-      <div class="card">
-        <h3>🎞 GIF Oluşturucu</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Video, resim veya yazıdan GIF yap. Hız, boyut, kalite ayarla.</p>
-
-        <div class="convert-options" style="margin-bottom:0.8rem">
-          <div class="option-group">
-            <label>Kaynak</label>
-            <div class="radio-group" id="gifModes">
-              <label class="radio"><input type="radio" name="gifMode" value="video" checked> Video</label>
-              <label class="radio"><input type="radio" name="gifMode" value="images"> Resimler</label>
-              <label class="radio"><input type="radio" name="gifMode" value="text"> Yazı</label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Video mode -->
-        <div id="gifVideoSection">
-          <div class="url-input-wrapper" style="margin-bottom:0.8rem">
-            <input type="text" id="gifUrl" placeholder="Video URL (YouTube, Twitch, vb.)" class="url-input">
-          </div>
-          <div class="upload-area" id="gifUploadArea" style="padding:1rem">
-            <p>Veya video dosyası yükle</p>
-            <input type="file" id="gifVideoFile" accept="video/*" hidden>
-            <button id="gifVideoSelectBtn" class="btn btn-small btn-outline">Dosya Seç</button>
-          </div>
-          <div id="gifVideoInfo" class="hidden" style="margin-bottom:0.5rem"><p id="gifVideoFileName" class="file-name"></p></div>
-        </div>
-
-        <!-- Images mode -->
-        <div id="gifImagesSection" class="hidden">
-          <div class="upload-area" id="gifImagesUploadArea" style="padding:1rem">
-            <p>Resimleri seç (sıralı GIF olur)</p>
-            <input type="file" id="gifImagesFile" accept="image/*" multiple hidden>
-            <button id="gifImagesSelectBtn" class="btn btn-small btn-outline">Resim Seç</button>
-          </div>
-          <div id="gifImagesList" style="margin-bottom:0.5rem;font-size:0.85rem;color:var(--text-secondary)"></div>
-        </div>
-
-        <!-- Text mode -->
-        <div id="gifTextSection" class="hidden">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.6rem">
-            <input type="text" id="gifText" placeholder="GIF yazısı..." class="url-input" style="padding:0.6rem;font-size:0.9rem;grid-column:span 2">
-            <input type="color" id="gifBgColor" value="#3388ff" style="height:40px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);cursor:pointer">
-            <input type="color" id="gifTextColor" value="#ffffff" style="height:40px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);cursor:pointer">
-          </div>
-          <div class="radio-group" style="margin-bottom:0.6rem;flex-wrap:wrap">
-            <label class="radio"><input type="radio" name="gifAnim" value="none" checked> Durağan</label>
-            <label class="radio"><input type="radio" name="gifAnim" value="scroll"> Kaydır</label>
-            <label class="radio"><input type="radio" name="gifAnim" value="bounce"> Zıpla</label>
-          </div>
-        </div>
-
-        <div class="convert-options" style="margin-top:0.8rem">
-          <div class="option-group">
-            <label>Süre (sn)</label>
-            <input type="number" id="gifDuration" value="3" min="1" max="30" class="time-input" style="width:80px">
-          </div>
-          <div class="option-group">
-            <label>Kare/sn (FPS)</label>
-            <select id="gifFps" class="select-input" style="min-width:80px">
-              <option value="5">5</option>
-              <option value="10" selected>10</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-              <option value="30">30</option>
-            </select>
-          </div>
-          <div class="option-group">
-            <label>Boyut</label>
-            <select id="gifWidth" class="select-input" style="min-width:80px">
-              <option value="320">320px</option>
-              <option value="480" selected>480px</option>
-              <option value="640">640px</option>
-              <option value="800">800px</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="gifError" class="error-msg hidden"></div>
-        <button id="gifCreateBtn" class="btn btn-accent">🎞 GIF Oluştur</button>
-        <div id="gifProgress" class="progress-area hidden">
-          <div class="progress-bar"><div id="gifProgressFill" class="progress-fill"></div></div>
-          <p id="gifProgressText">GIF oluşturuluyor...</p>
-          <button id="gifCancelBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem">✖ İptal</button>
-        </div>
-        <div id="gifResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
-          <p id="gifResultText" style="color:var(--green);font-weight:600">✅ GIF hazır!</p>
-          <button id="gifDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir GIF</button>
-        </div>
-      </div>
-    </section>
     <section id="tab-trim" class="tab-content">
       <div class="card">
         <h3>Video Yükle</h3>
