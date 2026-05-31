@@ -20,6 +20,7 @@
       <button class="tab-btn" data-tab="pdf">PDF Dönüştürücü</button>
       <button class="tab-btn" data-tab="editor">Belge Düzenleyici</button>
       <button class="tab-btn" data-tab="stream">Yayın Araçları</button>
+      <button class="tab-btn" data-tab="mail">Mail Araçları</button>
       <button class="tab-btn" data-tab="trim">Video Kesici</button>
     </div>
 
@@ -335,6 +336,52 @@
           <p id="streamResultText" style="color:var(--green);font-weight:600"></p>
           <button id="streamResultDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir</button>
         </div>
+      </div>
+    </section>
+
+    <!-- MAIL TAB -->
+    <section id="tab-mail" class="tab-content">
+      <div class="card">
+        <h3>📧 Toplu Mail Gönder</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Kendi SMTP hesabınla birden çok kişiye aynı maili gönder. Görsel ekle, toplu gönder.</p>
+
+        <details style="margin-bottom:1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:0.8rem">
+          <summary style="cursor:pointer;font-weight:600;color:var(--blue)">⚙ SMTP Ayarları</summary>
+          <div style="margin-top:0.8rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem">
+            <input type="text" id="mailHost" placeholder="SMTP Host (smtp.gmail.com)" class="url-input" style="padding:0.6rem;font-size:0.85rem">
+            <input type="text" id="mailPort" placeholder="Port (587)" class="url-input" style="padding:0.6rem;font-size:0.85rem">
+            <input type="email" id="mailUser" placeholder="E-posta adresin" class="url-input" style="padding:0.6rem;font-size:0.85rem">
+            <input type="password" id="mailPass" placeholder="Şifre / App Password" class="url-input" style="padding:0.6rem;font-size:0.85rem">
+            <input type="text" id="mailName" placeholder="Görünen adın (opsiyonel)" class="url-input" style="padding:0.6rem;font-size:0.85rem;grid-column:span 2">
+          </div>
+          <button id="mailSaveSmtp" class="btn btn-small btn-outline" style="margin-top:0.6rem">💾 Kaydet</button>
+          <span id="mailSmtpStatus" style="margin-left:0.5rem;font-size:0.85rem;color:var(--green)"></span>
+        </details>
+
+        <div style="margin-bottom:0.8rem">
+          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.3rem">Alıcılar (virgül / satırla ayır)</label>
+          <textarea id="mailTo" placeholder="ornek@mail.com, ikinci@mail.com" class="url-input" style="width:100%;min-height:60px;padding:0.6rem;font-size:0.85rem;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <div style="margin-bottom:0.8rem">
+          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.3rem">Konu</label>
+          <input type="text" id="mailSubject" placeholder="Mail konusu" class="url-input" style="padding:0.6rem;font-size:0.85rem">
+        </div>
+        <div style="margin-bottom:0.8rem">
+          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.3rem">Mesaj</label>
+          <textarea id="mailBody" placeholder="Mail içeriği..." class="url-input" style="width:100%;min-height:150px;padding:0.6rem;font-size:0.85rem;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <div style="margin-bottom:1rem">
+          <label style="color:var(--text-secondary);font-size:0.85rem;display:block;margin-bottom:0.3rem">Görsel / Dosya Eki (opsiyonel)</label>
+          <input type="file" id="mailAttachment" style="color:var(--text-secondary);font-size:0.85rem">
+        </div>
+
+        <div id="mailError" class="error-msg hidden"></div>
+        <button id="mailSendBtn" class="btn btn-accent">📤 Gönder</button>
+        <div id="mailProgress" class="progress-area hidden">
+          <div class="progress-bar"><div id="mailProgressFill" class="progress-fill"></div></div>
+          <p id="mailProgressText">Gönderiliyor...</p>
+        </div>
+        <div id="mailResult" class="hidden" style="margin-top:1rem"></div>
       </div>
     </section>
     <section id="tab-trim" class="tab-content">

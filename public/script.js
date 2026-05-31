@@ -146,7 +146,7 @@ convertBtn.addEventListener('click', async () => {
 
 sendToTrimBtn.addEventListener('click', () => {
   if (!convUrlValue) return;
-  document.querySelectorAll('.tab-btn')[6].click();
+  document.querySelectorAll('.tab-btn')[7].click();
   loadTrimVideo(convUrlValue, convTitleText);
 });
 
@@ -857,5 +857,97 @@ streamDownloadBtn.addEventListener('click', async () => {
   } catch (err) {
     streamProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
     streamDownloadBtn.disabled = false;
+  }
+});
+
+// ---- MAIL TOOLS ----
+const mailHost = document.getElementById('mailHost');
+const mailPort = document.getElementById('mailPort');
+const mailUser = document.getElementById('mailUser');
+const mailPass = document.getElementById('mailPass');
+const mailName = document.getElementById('mailName');
+const mailSaveSmtp = document.getElementById('mailSaveSmtp');
+const mailSmtpStatus = document.getElementById('mailSmtpStatus');
+const mailTo = document.getElementById('mailTo');
+const mailSubject = document.getElementById('mailSubject');
+const mailBody = document.getElementById('mailBody');
+const mailAttachment = document.getElementById('mailAttachment');
+const mailSendBtn = document.getElementById('mailSendBtn');
+const mailError = document.getElementById('mailError');
+const mailProgress = document.getElementById('mailProgress');
+const mailProgressFill = document.getElementById('mailProgressFill');
+const mailProgressText = document.getElementById('mailProgressText');
+const mailResult = document.getElementById('mailResult');
+
+function loadSmtpSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('omnitool_smtp') || '{}');
+    if (s.host) mailHost.value = s.host;
+    if (s.port) mailPort.value = s.port;
+    if (s.user) mailUser.value = s.user;
+    if (s.pass) mailPass.value = s.pass;
+    if (s.name) mailName.value = s.name;
+  } catch {}
+}
+loadSmtpSettings();
+
+mailSaveSmtp.addEventListener('click', () => {
+  const s = { host: mailHost.value, port: mailPort.value, user: mailUser.value, pass: mailPass.value, name: mailName.value };
+  localStorage.setItem('omnitool_smtp', JSON.stringify(s));
+  mailSmtpStatus.textContent = '✅ Kaydedildi';
+  setTimeout(() => { mailSmtpStatus.textContent = ''; }, 3000);
+});
+
+mailSendBtn.addEventListener('click', async () => {
+  hideError(mailError);
+  const host = mailHost.value.trim();
+  const port = mailPort.value.trim();
+  const user = mailUser.value.trim();
+  const pass = mailPass.value.trim();
+  const fromName = mailName.value.trim();
+  const to = mailTo.value.trim();
+  const subject = mailSubject.value.trim();
+  const body = mailBody.value.trim();
+
+  if (!host || !user || !pass) { showError(mailError, 'SMTP ayarlarını doldur (Host, E-posta, Şifre)'); return; }
+  if (!to) { showError(mailError, 'En az bir alıcı girin'); return; }
+  if (!subject || !body) { showError(mailError, 'Konu ve mesaj gerekli'); return; }
+
+  mailSendBtn.disabled = true;
+  mailProgress.classList.remove('hidden');
+  mailResult.classList.add('hidden');
+  mailProgressFill.style.width = '10%';
+  mailProgressText.textContent = 'Gönderiliyor...';
+  try {
+    const form = new FormData();
+    form.append('host', host);
+    form.append('port', port || '587');
+    form.append('user', user);
+    form.append('pass', pass);
+    form.append('fromName', fromName);
+    form.append('to', to);
+    form.append('subject', subject);
+    form.append('body', body);
+    if (mailAttachment.files.length > 0) form.append('attachment', mailAttachment.files[0]);
+
+    const res = await fetchWithTimeout('/api/send-mail', { method: 'POST', body: form }, 60000);
+    const data = await res.json();
+    if (!res.ok) { mailProgressText.textContent = 'Hata: ' + data.error; mailSendBtn.disabled = false; return; }
+    mailProgressFill.style.width = '100%';
+    mailProgressText.textContent = '✅ ' + data.sent + ' gönderildi, ' + data.failed + ' hata';
+    let html = '<div style="padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">';
+    html += '<p style="color:var(--green);font-weight:600">📤 ' + data.sent + '/' + (data.sent + data.failed) + ' başarılı</p>';
+    if (data.results && data.results.length > 0) {
+      html += '<div style="margin-top:0.5rem;font-size:0.8rem;max-height:200px;overflow-y:auto">';
+      for (const r of data.results) html += '<p style="color:' + (r.status === 'ok' ? 'var(--green)' : 'var(--red)') + '">' + r.email + ' → ' + r.status + (r.error ? ': ' + r.error : '') + '</p>';
+      html += '</div>';
+    }
+    html += '</div>';
+    mailResult.innerHTML = html;
+    mailResult.classList.remove('hidden');
+    setTimeout(() => { mailProgress.classList.add('hidden'); mailProgressFill.style.width = '0%'; mailSendBtn.disabled = false; }, 3000);
+  } catch (err) {
+    mailProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı (60sn)' : err.message);
+    mailSendBtn.disabled = false;
   }
 });

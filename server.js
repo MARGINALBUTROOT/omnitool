@@ -13,6 +13,7 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fontkit = require('@pdf-lib/fontkit');
 const mammoth = require('mammoth');
 const { Document: DocxDoc, Packer, Paragraph, TextRun } = require('docx');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -429,6 +430,35 @@ app.post('/api/document-save', upload.none(), async (req, res) => {
     res.json({ file: outName, title: baseName });
   } catch (err) {
     res.status(500).json({ error: 'Kaydetme hatası: ' + err.message });
+  }
+});
+
+app.post('/api/send-mail', upload.single('attachment'), async (req, res) => {
+  try {
+    const { host, port, user, pass, fromName, to, subject, body } = req.body;
+    if (!host || !user || !pass || !to || !subject || !body) return res.status(400).json({ error: 'Eksik alanlar (host, user, pass, to, subject, body gerekli)' });
+    const recipients = to.split(/[\n,;]+/).map(e => e.trim()).filter(e => e.includes('@'));
+    if (recipients.length === 0) return res.status(400).json({ error: 'Geçerli e-posta bulunamadı' });
+    const transporter = nodemailer.createTransport({ host, port: parseInt(port) || 587, secure: parseInt(port) === 465, auth: { user, pass } });
+    await transporter.verify();
+    const results = [];
+    for (const addr of recipients) {
+      try {
+        const mailOpts = {
+          from: `"${fromName || user}" <${user}>`, to: addr,
+          subject, text: body,
+          attachments: req.file ? [{ filename: req.file.originalname, path: req.file.path }] : []
+        };
+        const info = await transporter.sendMail(mailOpts);
+        results.push({ email: addr, status: 'ok', id: info.messageId });
+      } catch (e) {
+        results.push({ email: addr, status: 'hata', error: e.message });
+      }
+    }
+    if (req.file) safeUnlink(req.file.path);
+    res.json({ sent: results.filter(r => r.status === 'ok').length, failed: results.filter(r => r.status === 'hata').length, results });
+  } catch (err) {
+    res.status(500).json({ error: 'SMTP bağlantı hatası: ' + err.message });
   }
 });
 
