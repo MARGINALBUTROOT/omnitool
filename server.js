@@ -462,6 +462,99 @@ app.post('/api/send-mail', upload.single('attachment'), async (req, res) => {
   }
 });
 
+app.post('/api/gif-create', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'images', maxCount: 20 }]), async (req, res) => {
+  try {
+    const mode = req.body.mode || 'video';
+    const baseName = req.body.title ? req.body.title.replace(/[^\w\s]/gi, '').trim().substring(0, 50) : 'gif';
+    const fps = parseInt(req.body.fps) || 10;
+    const width = parseInt(req.body.width) || 480;
+    let inputPath, outName, outPath;
+    const outNameBase = `${baseName}_gif_${Date.now()}`;
+    outName = `${outNameBase}.gif`;
+    outPath = path.join(prc, outName);
+
+    if (mode === 'text') {
+      const text = req.body.text || 'GIF';
+      const bgColor = req.body.bgColor || '#3388ff';
+      const textColor = req.body.textColor || '#ffffff';
+      const fontSize = parseInt(req.body.fontSize) || 48;
+      const duration = parseFloat(req.body.duration) || 3;
+      const anim = req.body.anim || 'none';
+      const tmpGif = path.join(prc, `${outNameBase}_tmp.gif`);
+
+      let drawtext = `drawtext=text='${text.replace(/'/g, "'\\\\\\''")}':fontsize=${fontSize}:fontcolor=${textColor}:x=(w-text_w)/2:y=(h-text_h)/2`;
+      if (anim === 'scroll') drawtext = `drawtext=text='${text.replace(/'/g, "'\\\\\\''")}':fontsize=${fontSize}:fontcolor=${textColor}:x=w-mod(t*80\\,w+text_w):y=(h-text_h)/2`;
+      else if (anim === 'bounce') drawtext = `drawtext=text='${text.replace(/'/g, "'\\\\\\''")}':fontsize=${fontSize}:fontcolor=${textColor}:x=(w-text_w)/2:y=(h-text_h)/2+20*sin(2*PI*t)`;
+
+      await new Promise((resolve, reject) => {
+        const p = spawn(ffmpegPath, ['-f', 'lavfi', '-i', `color=c=${bgColor}:s=${width}x${Math.round(width*0.5625)}:d=${duration}`, '-vf', `${drawtext},fps=${fps}`, '-t', String(duration), '-y', tmpGif]);
+        let err = '';
+        p.stderr.on('data', d => err += d);
+        p.on('close', c => c === 0 ? resolve() : reject(new Error(err || 'GIF oluşturma hatası')));
+        p.on('error', reject);
+      });
+      fs.renameSync(tmpGif, outPath);
+    } else if (mode === 'images' && req.files && req.files.images) {
+      const files = req.files.images;
+      const duration = parseFloat(req.body.duration) || 2;
+      const inputs = files.map((f, i) => ['-loop', '1', '-t', String(duration / files.length || 0.5), '-i', f.path]);
+      const concat = [];
+      for (let i = 0; i < files.length; i++) concat.push(`[${i}:v]`);
+      const filter = `${concat.join('')}concat=n=${files.length}:v=1:a=0,scale=${width}:-1,fps=${fps}`;
+      const args = [];
+      for (const inp of inputs) args.push(...inp);
+      args.push('-filter_complex', filter, '-t', String(duration), '-y', outPath);
+      await new Promise((resolve, reject) => {
+        const p = spawn(ffmpegPath, args);
+        let err = '';
+        p.stderr.on('data', d => err += d);
+        p.on('close', c => {
+          files.forEach(f => safeUnlink(f.path));
+          c === 0 ? resolve() : reject(new Error(err || 'GIF oluşturma hatası'));
+        });
+        p.on('error', reject);
+      });
+    } else {
+      let videoPath;
+      if (req.files && req.files.video && req.files.video[0]) {
+        videoPath = req.files.video[0].path;
+      } else if (req.body.url) {
+        const url = cleanUrl(req.body.url);
+        const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
+        const vBase = sanitize(info.title);
+        videoPath = path.join(dls, `raw_gif_${Date.now()}_vid.mp4`);
+        videoPath = await dlSync(url, 'bestvideo+bestaudio/best', videoPath);
+      } else {
+        return res.status(400).json({ error: 'Video dosyası veya URL gerekli' });
+      }
+      const start = req.body.start || '00:00:00';
+      const duration = parseFloat(req.body.duration) || 3;
+      const palPath = path.join(prc, `${outNameBase}_pal.png`);
+      await new Promise((resolve, reject) => {
+        const p = spawn(ffmpegPath, ['-i', videoPath, '-ss', start, '-t', String(duration), '-vf', `fps=${fps},scale=${width}:-1:flags=lanczos,palettegen`, '-y', palPath]);
+        let err = '';
+        p.stderr.on('data', d => err += d);
+        p.on('close', c => c === 0 ? resolve() : reject(new Error(err || 'Palette hatası')));
+        p.on('error', reject);
+      });
+      await new Promise((resolve, reject) => {
+        const p = spawn(ffmpegPath, ['-i', videoPath, '-i', palPath, '-ss', start, '-t', String(duration), '-lavfi', `fps=${fps},scale=${width}:-1:flags=lanczos[x];[x][1:v]paletteuse`, '-y', outPath]);
+        let err = '';
+        p.stderr.on('data', d => err += d);
+        p.on('close', c => {
+          safeUnlink(palPath);
+          if (videoPath && req.files && req.files.video) safeUnlink(videoPath);
+          c === 0 ? resolve() : reject(new Error(err || 'GIF hatası'));
+        });
+        p.on('error', reject);
+      });
+    }
+    res.json({ file: outName, title: baseName });
+  } catch (err) {
+    res.status(500).json({ error: 'GIF hatası: ' + err.message });
+  }
+});
+
 app.post('/api/compress', upload.single('video'), async (req, res) => {
   try {
     let inputPath, baseName, origSize;
