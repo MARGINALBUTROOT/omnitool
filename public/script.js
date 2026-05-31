@@ -20,12 +20,22 @@ function showError(el, msg) { el.textContent = msg; el.classList.remove('hidden'
 function hideError(el) { el.classList.add('hidden'); }
 
 // ---- TABS ----
+const MAIL_PASS = 'AS12!DF31';
+let mailUnlocked = false;
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    const tab = document.getElementById('tab-' + btn.dataset.tab);
+    if (btn.dataset.tab === 'mail' && !mailUnlocked) {
+      const pwd = prompt('Mail araçlarına erişmek için şifre girin:');
+      if (pwd === MAIL_PASS) { mailUnlocked = true; tab.classList.add('active'); }
+      else { alert('Yanlış şifre'); document.querySelectorAll('.tab-btn')[0].click(); }
+    } else {
+      tab.classList.add('active');
+    }
   });
 });
 
