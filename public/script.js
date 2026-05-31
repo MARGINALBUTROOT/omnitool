@@ -1032,7 +1032,7 @@ gifCreateBtn.addEventListener('click', async () => {
       else if (gifUrl.value.trim()) form.append('url', gifUrl.value.trim());
       else { showError(gifError, 'Video URL girin veya dosya yükleyin'); gifCreateBtn.disabled = false; return; }
     } else if (mode === 'images') {
-      if (gifImageFiles.length < 2) { showError(gifError, 'En az 2 resim seçin'); gifCreateBtn.disabled = false; return; }
+      if (gifImageFiles.length < 1) { showError(gifError, 'En az 1 resim seçin'); gifCreateBtn.disabled = false; return; }
       for (const f of gifImageFiles) form.append('images', f);
     } else {
       if (!gifText.value.trim()) { showError(gifError, 'GIF yazısı girin'); gifCreateBtn.disabled = false; return; }

@@ -496,9 +496,9 @@ app.post('/api/gif-create', upload.any(), async (req, res) => {
       fs.renameSync(tmpGif, outPath);
     } else if (mode === 'images') {
       const images = allFiles.filter(f => f.fieldname === 'images');
-      if (images.length < 2) {
+      if (images.length < 1) {
         allFiles.forEach(f => safeUnlink(f.path));
-        return res.status(400).json({ error: 'En az 2 resim gerekli, ' + images.length + ' yüklendi' });
+        return res.status(400).json({ error: 'En az 1 resim gerekli' });
       }
       const duration = parseFloat(req.body.duration) || 2;
       const perFrames = Math.max(1, Math.round((duration / images.length) * fps));
