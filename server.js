@@ -501,29 +501,29 @@ app.post('/api/gif-create', upload.any(), async (req, res) => {
         return res.status(400).json({ error: 'En az 2 resim gerekli, ' + images.length + ' yüklendi' });
       }
       const duration = parseFloat(req.body.duration) || 2;
-      const perDuration = duration / images.length;
-      const args = [];
-      for (const f of images) args.push('-loop', '1', '-t', String(perDuration), '-i', f.path);
-      const labels = images.map((_, i) => `[${i}:v]`).join('');
-      args.push('-filter_complex', `${labels}concat=n=${images.length}:v=1:a=0,scale=${width}:-1,fps=${fps}`, '-t', String(duration), '-y', outPath);
+      const perFrames = Math.max(1, Math.round((duration / images.length) * fps));
       await new Promise((resolve, reject) => {
-        const p = spawn(ffmpegPath, args);
+        const a = [];
+        for (const f of images) a.push('-loop', '1', '-frames:v', String(perFrames), '-i', f.path);
+        const lbls = images.map((_, i) => `[${i}:v]`).join('');
+        a.push('-filter_complex', `${lbls}concat=n=${images.length}:v=1:a=0,scale=${width}:-1,fps=${fps}`, '-t', String(duration), '-y', outPath);
         let err = '';
+        const p = spawn(ffmpegPath, a);
         p.stderr.on('data', d => err += d);
         p.on('close', c => {
           images.forEach(f => safeUnlink(f.path));
-          c === 0 ? resolve() : reject(new Error(err || 'GIF oluşturma hatası'));
+          c === 0 ? resolve() : reject(new Error(err || 'GIF hatası'));
         });
         p.on('error', reject);
       });
     } else {
+      const videoFiles = allFiles.filter(f => f.fieldname === 'video');
       let videoPath;
-      if (req.files && req.files.video && req.files.video[0]) {
-        videoPath = req.files.video[0].path;
+      if (videoFiles.length > 0) {
+        videoPath = videoFiles[0].path;
       } else if (req.body.url) {
         const url = cleanUrl(req.body.url);
         const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
-        const vBase = sanitize(info.title);
         videoPath = path.join(dls, `raw_gif_${Date.now()}_vid.mp4`);
         videoPath = await dlSync(url, 'bestvideo+bestaudio/best', videoPath);
       } else {
@@ -545,7 +545,7 @@ app.post('/api/gif-create', upload.any(), async (req, res) => {
         p.stderr.on('data', d => err += d);
         p.on('close', c => {
           safeUnlink(palPath);
-          if (videoPath && req.files && req.files.video) safeUnlink(videoPath);
+          if (videoFiles.length > 0) safeUnlink(videoPath);
           c === 0 ? resolve() : reject(new Error(err || 'GIF hatası'));
         });
         p.on('error', reject);

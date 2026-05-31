@@ -989,6 +989,7 @@ const gifDownloadBtn = document.getElementById('gifDownloadBtn');
 let gifFile = null;
 let gifImageFiles = [];
 let gifUrlValue = '';
+let gifAbort = null;
 
 document.querySelectorAll('input[name="gifMode"]').forEach(r => r.addEventListener('change', () => {
   const m = document.querySelector('input[name="gifMode"]:checked').value;
@@ -1018,6 +1019,7 @@ gifCreateBtn.addEventListener('click', async () => {
   gifResult.classList.add('hidden');
   gifProgressFill.style.width = '5%';
   gifProgressText.textContent = 'GIF oluşturuluyor...';
+  gifAbort = new AbortController();
   try {
     const form = new FormData();
     form.append('mode', mode);
@@ -1039,9 +1041,9 @@ gifCreateBtn.addEventListener('click', async () => {
       form.append('textColor', gifTextColor.value);
       form.append('anim', document.querySelector('input[name="gifAnim"]:checked').value);
     }
-    const res = await fetchWithTimeout('/api/gif-create', { method: 'POST', body: form }, 120000);
+    const res = await fetch('/api/gif-create', { method: 'POST', body: form, signal: gifAbort.signal });
     const data = await res.json();
-    if (!res.ok) { gifProgressText.textContent = 'Hata: ' + data.error; gifCreateBtn.disabled = false; return; }
+    if (!res.ok) { gifProgressText.textContent = 'Hata: ' + data.error; gifCancel(); return; }
     gifProgressFill.style.width = '90%';
     gifProgressText.textContent = 'Hazırlanıyor...';
     gifResult.classList.remove('hidden');
@@ -1054,10 +1056,20 @@ gifCreateBtn.addEventListener('click', async () => {
     setTimeout(() => {
       gifProgressFill.style.width = '100%';
       gifProgressText.textContent = '✅ GIF hazır!';
-      setTimeout(() => { gifProgress.classList.add('hidden'); gifProgressFill.style.width = '0%'; gifCreateBtn.disabled = false; }, 3000);
+      setTimeout(() => { gifProgress.classList.add('hidden'); gifProgressFill.style.width = '0%'; gifCancel(); }, 3000);
     }, 500);
   } catch (err) {
-    gifProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
-    gifCreateBtn.disabled = false;
+    if (err.name === 'AbortError') { gifProgressText.textContent = '⚠ İptal edildi'; } else { gifProgressText.textContent = 'Hata: ' + err.message; }
+    gifCancel();
   }
+});
+
+function gifCancel() {
+  gifCreateBtn.disabled = false;
+  gifAbort = null;
+}
+
+const gifCancelBtn = document.getElementById('gifCancelBtn');
+gifCancelBtn.addEventListener('click', () => {
+  if (gifAbort) { gifAbort.abort(); gifProgressText.textContent = '⚠ İptal ediliyor...'; gifCancelBtn.disabled = true; }
 });
