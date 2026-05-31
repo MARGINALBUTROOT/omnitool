@@ -501,10 +501,10 @@ app.post('/api/gif-create', upload.any(), async (req, res) => {
         return res.status(400).json({ error: 'En az 1 resim gerekli' });
       }
       const duration = parseFloat(req.body.duration) || 2;
-      const perFrames = Math.max(1, Math.round((duration / images.length) * fps));
+      const perDuration = duration / images.length;
       await new Promise((resolve, reject) => {
         const a = [];
-        for (const f of images) a.push('-loop', '1', '-frames:v', String(perFrames), '-i', f.path);
+        for (const f of images) a.push('-loop', '1', '-t', String(perDuration), '-i', f.path);
         const lbls = images.map((_, i) => `[${i}:v]`).join('');
         a.push('-filter_complex', `${lbls}concat=n=${images.length}:v=1:a=0,scale=${width}:-1,fps=${fps}`, '-t', String(duration), '-y', outPath);
         let err = '';
