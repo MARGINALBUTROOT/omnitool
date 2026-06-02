@@ -517,10 +517,24 @@ function getDuration(start, end) {
 
 async function ensureBinary() {
   const ytPath = getYtDlpPath();
-  if (!fs.existsSync(ytPath)) {
-    const v = await download();
-    console.log(`yt-dlp v${v} hazır`);
+  if (process.platform === 'win32') {
+    if (!fs.existsSync(ytPath)) {
+      const v = await download();
+      console.log(`yt-dlp v${v} hazır`);
+    }
+    return;
   }
+  // Linux: download standalone binary (not Python zipapp)
+  const binDir = path.dirname(ytPath);
+  if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
+  const url = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';
+  console.log('yt-dlp standalone indiriliyor...');
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('yt-dlp indirilemedi: ' + res.status);
+  const buf = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(ytPath, buf);
+  fs.chmodSync(ytPath, 0o755);
+  console.log('yt-dlp hazır (' + (buf.length / 1024 / 1024).toFixed(1) + ' MB)');
 }
 
 ensureBinary().then(() => ensurePdfFont().then(() => app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`))));
