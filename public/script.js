@@ -961,3 +961,73 @@ mailSendBtn.addEventListener('click', async () => {
     mailSendBtn.disabled = false;
   }
 });
+
+// ---- SLIDESHOW ----
+const ssImages = document.getElementById('ssImages');
+const ssImagesBtn = document.getElementById('ssImagesBtn');
+const ssImagesList = document.getElementById('ssImagesList');
+const ssAudio = document.getElementById('ssAudio');
+const ssAudioBtn = document.getElementById('ssAudioBtn');
+const ssAudioName = document.getElementById('ssAudioName');
+const ssTransition = document.getElementById('ssTransition');
+const ssDuration = document.getElementById('ssDuration');
+const ssResolution = document.getElementById('ssResolution');
+const ssCreateBtn = document.getElementById('ssCreateBtn');
+const ssError = document.getElementById('ssError');
+const ssProgress = document.getElementById('ssProgress');
+const ssProgressFill = document.getElementById('ssProgressFill');
+const ssProgressText = document.getElementById('ssProgressText');
+const ssCancelBtn = document.getElementById('ssCancelBtn');
+const ssResult = document.getElementById('ssResult');
+const ssDownloadBtn = document.getElementById('ssDownloadBtn');
+
+let ssImageFiles = [];
+let ssAudioFile = null;
+let ssAbort = null;
+
+ssImagesBtn.addEventListener('click', () => ssImages.click());
+ssImages.addEventListener('change', e => {
+  ssImageFiles = Array.from(e.target.files);
+  ssImagesList.textContent = '📷 ' + ssImageFiles.length + ' fotoğraf seçildi';
+});
+ssAudioBtn.addEventListener('click', () => ssAudio.click());
+ssAudio.addEventListener('change', e => {
+  if (e.target.files.length > 0) { ssAudioFile = e.target.files[0]; ssAudioName.textContent = '🎵 ' + ssAudioFile.name; }
+});
+
+ssCreateBtn.addEventListener('click', async () => {
+  hideError(ssError);
+  if (ssImageFiles.length < 2) { showError(ssError, 'En az 2 fotoğraf seçin'); return; }
+  ssCreateBtn.disabled = true;
+  ssProgress.classList.remove('hidden');
+  ssResult.classList.add('hidden');
+  ssProgressFill.style.width = '5%';
+  ssProgressText.textContent = 'Video oluşturuluyor...';
+  ssAbort = new AbortController();
+  try {
+    const form = new FormData();
+    form.append('transition', ssTransition.value);
+    form.append('duration', ssDuration.value);
+    form.append('resolution', ssResolution.value);
+    for (const f of ssImageFiles) form.append('images', f);
+    if (ssAudioFile) form.append('audio', ssAudioFile);
+    const res = await fetch('/api/slideshow', { method: 'POST', body: form, signal: ssAbort.signal });
+    const data = await res.json();
+    if (!res.ok) { ssProgressText.textContent = 'Hata: ' + data.error; ssCancel(); return; }
+    ssProgressFill.style.width = '90%';
+    ssProgressText.textContent = 'Hazırlanıyor...';
+    ssResult.classList.remove('hidden');
+    ssDownloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = '/api/download/' + data.file;
+      a.download = data.title + '.mp4';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    setTimeout(() => { ssProgressFill.style.width = '100%'; ssProgressText.textContent = '✅ Video hazır!'; setTimeout(() => { ssProgress.classList.add('hidden'); ssProgressFill.style.width = '0%'; ssCancel(); }, 3000); }, 500);
+  } catch (err) {
+    if (err.name === 'AbortError') { ssProgressText.textContent = '⚠ İptal edildi'; } else { ssProgressText.textContent = 'Hata: ' + err.message; }
+    ssCancel();
+  }
+});
+function ssCancel() { ssCreateBtn.disabled = false; ssAbort = null; }
+ssCancelBtn.addEventListener('click', () => { if (ssAbort) { ssAbort.abort(); ssProgressText.textContent = '⚠ İptal ediliyor...'; ssCancelBtn.disabled = true; } });

@@ -23,6 +23,7 @@
       <button class="tab-btn" data-tab="mail">Mail Araçları</button>
 
       <button class="tab-btn" data-tab="trim">Video Kesici</button>
+      <button class="tab-btn" data-tab="slideshow">Video Yapıcı</button>
     </div>
 
     <!-- CONVERT TAB -->
@@ -430,6 +431,61 @@
             <div class="progress-bar"><div id="trimProgressFill" class="progress-fill"></div></div>
             <p id="trimProgressText">İşleniyor...</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-slideshow" class="tab-content">
+      <div class="card">
+        <h3>🎬 Video Yapıcı</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Fotoğraflardan geçiş efektli video yap, arka plan müzik ekle, MP4 olarak indir.</p>
+        <div class="upload-area" style="padding:1rem;margin-bottom:0.8rem">
+          <p>Fotoğrafları seç (en az 2, sıralı video olur)</p>
+          <input type="file" id="ssImages" accept="image/*" multiple hidden>
+          <button id="ssImagesBtn" class="btn btn-small btn-outline">📷 Fotoğraf Seç</button>
+          <div id="ssImagesList" style="margin-top:0.4rem;font-size:0.85rem;color:var(--text-secondary)"></div>
+        </div>
+        <div class="upload-area" style="padding:0.8rem;margin-bottom:0.8rem">
+          <p style="font-size:0.85rem">Arka plan müzik (opsiyonel)</p>
+          <input type="file" id="ssAudio" accept="audio/*" hidden>
+          <button id="ssAudioBtn" class="btn btn-small btn-outline">🎵 Müzik Seç</button>
+          <div id="ssAudioName" style="margin-top:0.3rem;font-size:0.85rem;color:var(--text-secondary)"></div>
+        </div>
+        <div class="convert-options" style="margin-bottom:0.8rem">
+          <div class="option-group">
+            <label>Geçiş efekti</label>
+            <select id="ssTransition" class="select-input" style="min-width:120px">
+              <option value="fade">Fade (Soldurma)</option>
+              <option value="slideleft">Kaydır Sol</option>
+              <option value="slideright">Kaydır Sağ</option>
+              <option value="slideup">Kaydır Yukarı</option>
+              <option value="slidedown">Kaydır Aşağı</option>
+              <option value="fadeblack">Fade Siyah</option>
+            </select>
+          </div>
+          <div class="option-group">
+            <label>Foto başı (sn)</label>
+            <input type="number" id="ssDuration" value="3" min="1" max="30" class="time-input" style="width:70px">
+          </div>
+          <div class="option-group">
+            <label>Çözünürlük</label>
+            <select id="ssResolution" class="select-input" style="min-width:100px">
+              <option value="1920x1080">1080p</option>
+              <option value="1280x720" selected>720p</option>
+              <option value="854x480">480p</option>
+            </select>
+          </div>
+        </div>
+        <div id="ssError" class="error-msg hidden"></div>
+        <button id="ssCreateBtn" class="btn btn-accent">🎬 Video Oluştur</button>
+        <div id="ssProgress" class="progress-area hidden">
+          <div class="progress-bar"><div id="ssProgressFill" class="progress-fill"></div></div>
+          <p id="ssProgressText">Video oluşturuluyor...</p>
+          <button id="ssCancelBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem">✖ İptal</button>
+        </div>
+        <div id="ssResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
+          <p style="color:var(--green);font-weight:600">✅ Video hazır!</p>
+          <button id="ssDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir MP4</button>
         </div>
       </div>
     </section>

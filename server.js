@@ -573,6 +573,89 @@ app.post('/api/compress', upload.single('video'), async (req, res) => {
   }
 });
 
+app.post('/api/slideshow', upload.any(), async (req, res) => {
+  try {
+    const images = (req.files || []).filter(f => f.fieldname === 'images');
+    if (images.length < 2) { return res.status(400).json({ error: 'En az 2 fotoğraf gerekli' }); }
+    const audio = (req.files || []).find(f => f.fieldname === 'audio');
+    const transition = req.body.transition || 'fade';
+    const dur = parseFloat(req.body.duration) || 3;
+    const reso = req.body.resolution || '1280x720';
+    const [w, h] = reso.split('x').map(Number);
+    const transDur = 0.5;
+    const baseName = ('slideshow_' + Date.now()).substring(0, 50);
+    const outName = `${baseName}.mp4`;
+    const outPath = path.join(prc, outName);
+    const tempVids = [];
+
+    // Create individual video segments from each image
+    for (let i = 0; i < images.length; i++) {
+      const segPath = path.join(prc, `seg_${baseName}_${i}.mp4`);
+      await new Promise((resolve, reject) => {
+        const p = spawn(ffmpegPath, ['-loop', '1', '-t', String(dur + transDur), '-i', images[i].path, '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p,fps=24`, '-c:v', 'libx264', '-crf', '23', '-preset', 'fast', '-pix_fmt', 'yuv420p', '-y', segPath]);
+        let err = '';
+        p.stderr.on('data', d => err += d);
+        p.on('close', c => c === 0 ? resolve() : reject(new Error('Segment hatası: ' + err)));
+        p.on('error', reject);
+      });
+      tempVids.push(segPath);
+    }
+
+    // Build xfade chain
+    const filterParts = [];
+    for (let i = 0; i < tempVids.length; i++) {
+      const offset = i === 0 ? 0 : (i * dur) + ((i - 1) * transDur);
+      filterParts.push(`[${i}]settb=AVTB,setpts=PTS-STARTPTS+${offset}/TB[${i}v]`);
+    }
+    const maxOff = tempVids.length > 1 ? ((tempVids.length - 1) * dur) + ((tempVids.length - 2) * transDur) + dur : dur;
+    let lastLabel = `${tempVids.length - 1}v`;
+    for (let i = 0; i < tempVids.length - 1; i++) {
+      const xfadeOff = ((i + 1) * dur) + (i * transDur);
+      const label = i === tempVids.length - 2 ? 'out' : `t${i}`;
+      const inputA = label.startsWith('t') ? lastLabel : `${i}v`;
+      const inputB = `${i + 1}v`;
+      filterParts.push(`[${inputA}][${inputB}]xfade=transition=${transition}:duration=${transDur}:offset=${xfadeOff},format=yuv420p${label === 'out' ? '[out]' : `[${label}]`}`);
+      if (!label.startsWith('t')) lastLabel = label;
+    }
+    if (tempVids.length === 1) {
+      filterParts.push(`[0]copy[out]`);
+    }
+
+    const tempConcat = path.join(prc, `concat_${baseName}.mp4`);
+    const fcArgs = [];
+    for (const v of tempVids) fcArgs.push('-i', v);
+    fcArgs.push('-filter_complex', filterParts.join(';'), '-map', '[out]', '-c:v', 'libx264', '-crf', '23', '-preset', 'fast', '-pix_fmt', 'yuv420p', '-t', String(maxOff), '-y', tempConcat);
+    await new Promise((resolve, reject) => {
+      const p = spawn(ffmpegPath, fcArgs);
+      let err = '';
+      p.stderr.on('data', d => err += d);
+      p.on('close', c => c === 0 ? resolve() : reject(new Error('Xfade hatası: ' + err)));
+      p.on('error', reject);
+    });
+
+    // Add audio overlay if provided
+    if (audio) {
+      await new Promise((resolve, reject) => {
+        const p = spawn(ffmpegPath, ['-i', tempConcat, '-i', audio.path, '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-y', outPath]);
+        let err = '';
+        p.stderr.on('data', d => err += d);
+        p.on('close', c => {
+          tempVids.forEach(f => safeUnlink(f)); safeUnlink(tempConcat); safeUnlink(audio.path);
+          c === 0 ? resolve() : reject(new Error('Ses hatası: ' + err));
+        });
+        p.on('error', reject);
+      });
+    } else {
+      await fs.promises.rename(tempConcat, outPath).catch(() => {});
+      tempVids.forEach(f => safeUnlink(f));
+    }
+    images.forEach(f => safeUnlink(f.path));
+    res.json({ file: outName, title: 'Slayt' });
+  } catch (err) {
+    res.status(500).json({ error: 'Slayt hatası: ' + err.message });
+  }
+});
+
 app.get('/api/download/:file', (req, res) => {
   const fp = path.join(prc, req.params.file);
   if (!fs.existsSync(fp)) return res.status(404).json({ error: 'Dosya bulunamadı' });
