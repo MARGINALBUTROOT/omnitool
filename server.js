@@ -18,6 +18,30 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const YT_TIMEOUT = 40000;
+const YT_API_KEY = process.env.YOUTUBE_API_KEY || '';
+
+function parseIsoDuration(d) {
+  const m = d.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return 0;
+  return (parseInt(m[1]||0)*3600) + (parseInt(m[2]||0)*60) + (parseInt(m[3]||0));
+}
+
+async function ytApiInfo(videoId) {
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${YT_API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.items || data.items.length === 0) throw new Error('Video bulunamadı');
+  const i = data.items[0];
+  return {
+    title: i.snippet.title,
+    duration: parseIsoDuration(i.contentDetails.duration),
+    thumbnail: i.snippet.thumbnails?.maxres?.url || i.snippet.thumbnails?.high?.url || i.snippet.thumbnails?.default?.url || '',
+    author: i.snippet.channelTitle,
+    extractor: 'YouTube',
+    webpage_url: `https://www.youtube.com/watch?v=${videoId}`,
+    formats: []
+  };
+}
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -105,6 +129,14 @@ app.post('/api/info', async (req, res) => {
     let { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL girin' });
     url = cleanUrl(url);
+    const u = new URL(url);
+    const isYt = u.hostname.includes('youtube.com') || u.hostname === 'youtu.be';
+    if (isYt && YT_API_KEY) {
+      const vid = u.searchParams.get('v') || (u.hostname === 'youtu.be' ? u.pathname.slice(1).split('/')[0] : '');
+      if (!vid) return res.status(400).json({ error: 'Video ID bulunamadı' });
+      const data = await ytApiInfo(vid);
+      return res.json(data);
+    }
     const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
     let formats = (info.formats || []).filter(f => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none');
     if (formats.length === 0) {
@@ -134,8 +166,20 @@ app.post('/api/convert', async (req, res) => {
     let { url, format, quality } = req.body;
     if (!url) return res.status(400).json({ error: 'URL girin' });
     url = cleanUrl(url);
-    const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
-    const baseName = sanitize(info.title);
+    const u = new URL(url);
+    const isYt = u.hostname.includes('youtube.com') || u.hostname === 'youtu.be';
+    let baseName;
+    if (isYt && YT_API_KEY) {
+      const vid = u.searchParams.get('v') || (u.hostname === 'youtu.be' ? u.pathname.slice(1).split('/')[0] : '');
+      if (vid) {
+        const data = await ytApiInfo(vid);
+        baseName = sanitize(data.title);
+      }
+    }
+    if (!baseName) {
+      const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
+      baseName = sanitize(info.title);
+    }
     const ts = Date.now();
     const isMp3 = format === 'mp3';
     const ext = isMp3 ? 'mp3' : 'mp4';
@@ -473,6 +517,18 @@ app.post('/api/send-mail', upload.single('attachment'), async (req, res) => {
     res.json({ sent: results.filter(r => r.status === 'ok').length, failed: results.filter(r => r.status === 'hata').length, results });
   } catch (err) {
     res.status(500).json({ error: 'SMTP bağlantı hatası: ' + err.message });
+  }
+});
+
+app.post('/api/cookies', (req, res) => {
+  try {
+    const { cookies } = req.body;
+    if (!cookies) return res.status(400).json({ error: 'Cookie gerekli' });
+    fs.writeFileSync(getCookiePath(), cookies);
+    console.log('Cookies güncellendi');
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
