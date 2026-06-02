@@ -31,7 +31,7 @@ const upl = path.join(__dirname, 'uploads');
 [dls, prc, upl].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
 const upload = multer({ dest: upl });
 
-const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, extractorArgs: 'youtube:player_client=android' };
+const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', extractorArgs: 'youtube:player_client=web,android;skip=webpage' };
 const ffDir = path.dirname(ffmpegPath);
 
 function cleanUrl(url) {
@@ -56,6 +56,20 @@ function getYtDlpPath() {
   return process.platform === 'win32' ? base + '.exe' : base;
 }
 
+function getCookiePath() {
+  return path.join(__dirname, 'cookies.txt');
+}
+
+function ensureCookies() {
+  const cp = getCookiePath();
+  if (!fs.existsSync(cp)) {
+    const cookies = `# Netscape HTTP Cookie File
+.youtube.com	TRUE	/	TRUE	0	CONSENT	YES+TR
+`;
+    fs.writeFileSync(cp, cookies);
+  }
+}
+
 function jsonWithTimeout(url, flags, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Zaman aşımı')), ms);
@@ -68,7 +82,7 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
-    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--extractor-args', 'youtube:player_client=android'];
+    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', '--extractor-args', 'youtube:player_client=web,android;skip=webpage'];
     const p = spawn(getYtDlpPath(), args);
     let stderr = '';
     p.stderr.on('data', d => stderr += d);
@@ -537,7 +551,7 @@ async function ensureBinary() {
   console.log('yt-dlp hazır (' + (buf.length / 1024 / 1024).toFixed(1) + ' MB)');
 }
 
-ensureBinary().then(() => ensurePdfFont().then(() => app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`))));
+ensureBinary().then(() => { ensureCookies(); ensurePdfFont().then(() => app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`))); });
 async function ensurePdfFont() {
   const fontPath = path.join(__dirname, 'DejaVuSans.ttf');
   if (fs.existsSync(fontPath)) { pdfFontBytes = fs.readFileSync(fontPath); console.log('Font hazır'); return; }
