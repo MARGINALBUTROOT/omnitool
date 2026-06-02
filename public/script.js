@@ -963,9 +963,8 @@ mailSendBtn.addEventListener('click', async () => {
 });
 
 // ---- SLIDESHOW ----
-const ssImages = document.getElementById('ssImages');
-const ssImagesBtn = document.getElementById('ssImagesBtn');
-const ssImagesList = document.getElementById('ssImagesList');
+const ssImageSlots = document.getElementById('ssImageSlots');
+const ssAddSlotBtn = document.getElementById('ssAddSlotBtn');
 const ssAudio = document.getElementById('ssAudio');
 const ssAudioBtn = document.getElementById('ssAudioBtn');
 const ssAudioName = document.getElementById('ssAudioName');
@@ -981,15 +980,55 @@ const ssCancelBtn = document.getElementById('ssCancelBtn');
 const ssResult = document.getElementById('ssResult');
 const ssDownloadBtn = document.getElementById('ssDownloadBtn');
 
-let ssImageFiles = [];
 let ssAudioFile = null;
 let ssAbort = null;
 
-ssImagesBtn.addEventListener('click', () => ssImages.click());
-ssImages.addEventListener('change', e => {
-  ssImageFiles = Array.from(e.target.files);
-  ssImagesList.textContent = '📷 ' + ssImageFiles.length + ' fotoğraf seçildi';
+function getSlotFiles() {
+  const files = [];
+  document.querySelectorAll('#ssImageSlots .upload-area').forEach(el => {
+    const inp = el.querySelector('input[type=file]');
+    if (inp && inp.files.length > 0) files.push(inp.files[0]);
+  });
+  return files;
+}
+
+function updateSlotLabels() {
+  const slots = document.querySelectorAll('#ssImageSlots .upload-area');
+  slots.forEach((el, i) => {
+    const lbl = el.querySelector('span:first-child');
+    if (lbl) lbl.textContent = (i + 1) + '. Fotoğraf';
+    const rm = el.querySelector('.ssRemoveBtn');
+    if (rm) rm.style.display = slots.length > 2 ? '' : 'none';
+  });
+}
+
+ssImageSlots.addEventListener('click', e => {
+  const btn = e.target.closest('.ssSlotBtn');
+  if (btn) { const inp = btn.parentElement.querySelector('input[type=file]'); if (inp) inp.click(); return; }
+  const rm = e.target.closest('.ssRemoveBtn');
+  if (rm) { const slot = rm.closest('.upload-area'); if (slot && document.querySelectorAll('#ssImageSlots .upload-area').length > 2) { slot.remove(); updateSlotLabels(); } }
 });
+ssImageSlots.addEventListener('change', e => {
+  if (e.target.matches('input[type=file]')) {
+    const nameSpan = e.target.parentElement.querySelector('.ssSlotName');
+    if (nameSpan) nameSpan.textContent = e.target.files.length > 0 ? '✅ ' + e.target.files[0].name : '';
+  }
+});
+
+ssAddSlotBtn.addEventListener('click', () => {
+  const idx = document.querySelectorAll('#ssImageSlots .upload-area').length;
+  const div = document.createElement('div');
+  div.className = 'upload-area';
+  div.style.cssText = 'padding:0.8rem;display:flex;align-items:center;gap:0.5rem';
+  div.innerHTML = `<span style="font-weight:600;font-size:0.85rem">${idx+1}. Fotoğraf</span>
+<input type="file" accept="image/*" hidden>
+<button class="btn btn-small btn-outline ssSlotBtn">📷 Seç</button>
+<span class="ssSlotName" style="font-size:0.85rem;color:var(--text-secondary)"></span>
+<button class="btn btn-small btn-outline ssRemoveBtn" style="color:var(--red);margin-left:auto">✖</button>`;
+  ssImageSlots.appendChild(div);
+  updateSlotLabels();
+});
+
 ssAudioBtn.addEventListener('click', () => ssAudio.click());
 ssAudio.addEventListener('change', e => {
   if (e.target.files.length > 0) { ssAudioFile = e.target.files[0]; ssAudioName.textContent = '🎵 ' + ssAudioFile.name; }
@@ -997,7 +1036,8 @@ ssAudio.addEventListener('change', e => {
 
 ssCreateBtn.addEventListener('click', async () => {
   hideError(ssError);
-  if (ssImageFiles.length < 2) { showError(ssError, 'En az 2 fotoğraf seçin'); return; }
+  const files = getSlotFiles();
+  if (files.length < 2) { showError(ssError, 'En az 2 fotoğraf seçin'); return; }
   ssCreateBtn.disabled = true;
   ssProgress.classList.remove('hidden');
   ssResult.classList.add('hidden');
@@ -1009,7 +1049,7 @@ ssCreateBtn.addEventListener('click', async () => {
     form.append('transition', ssTransition.value);
     form.append('duration', ssDuration.value);
     form.append('resolution', ssResolution.value);
-    for (const f of ssImageFiles) form.append('images', f);
+    for (const f of files) form.append('images', f);
     if (ssAudioFile) form.append('audio', ssAudioFile);
     const res = await fetch('/api/slideshow', { method: 'POST', body: form, signal: ssAbort.signal });
     const data = await res.json();

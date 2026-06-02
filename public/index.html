@@ -439,12 +439,21 @@
       <div class="card">
         <h3>🎬 Video Yapıcı</h3>
         <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Fotoğraflardan geçiş efektli video yap, arka plan müzik ekle, MP4 olarak indir.</p>
-        <div class="upload-area" style="padding:1rem;margin-bottom:0.8rem">
-          <p>Fotoğrafları seç (en az 2, sıralı video olur)</p>
-          <input type="file" id="ssImages" accept="image/*" multiple hidden>
-          <button id="ssImagesBtn" class="btn btn-small btn-outline">📷 Fotoğraf Seç</button>
-          <div id="ssImagesList" style="margin-top:0.4rem;font-size:0.85rem;color:var(--text-secondary)"></div>
-        </div>
+          <div id="ssImageSlots" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.8rem">
+            <div class="upload-area" style="padding:0.8rem;display:flex;align-items:center;gap:0.5rem">
+              <span style="font-weight:600;font-size:0.85rem;min-width:90px">1. Fotoğraf</span>
+              <input type="file" accept="image/*" hidden>
+              <button class="btn btn-small btn-outline ssSlotBtn">📷 Seç</button>
+              <span class="ssSlotName" style="font-size:0.85rem;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+            </div>
+            <div class="upload-area" style="padding:0.8rem;display:flex;align-items:center;gap:0.5rem">
+              <span style="font-weight:600;font-size:0.85rem;min-width:90px">2. Fotoğraf</span>
+              <input type="file" accept="image/*" hidden>
+              <button class="btn btn-small btn-outline ssSlotBtn">📷 Seç</button>
+              <span class="ssSlotName" style="font-size:0.85rem;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+            </div>
+          </div>
+          <button id="ssAddSlotBtn" class="btn btn-small btn-outline" style="margin-bottom:0.8rem">➕ Fotoğraf Ekle</button>
         <div class="upload-area" style="padding:0.8rem;margin-bottom:0.8rem">
           <p style="font-size:0.85rem">Arka plan müzik (opsiyonel)</p>
           <input type="file" id="ssAudio" accept="audio/*" hidden>
