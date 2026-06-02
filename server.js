@@ -31,7 +31,7 @@ const upl = path.join(__dirname, 'uploads');
 [dls, prc, upl].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
 const upload = multer({ dest: upl });
 
-const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true };
+const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, extractorArgs: 'youtube:player_client=android' };
 const ffDir = path.dirname(ffmpegPath);
 
 function cleanUrl(url) {
@@ -68,7 +68,7 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
-    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet'];
+    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--extractor-args', 'youtube:player_client=android'];
     const p = spawn(getYtDlpPath(), args);
     let stderr = '';
     p.stderr.on('data', d => stderr += d);
