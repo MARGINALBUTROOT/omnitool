@@ -55,8 +55,9 @@ const upl = path.join(__dirname, 'uploads');
 [dls, prc, upl].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
 const upload = multer({ dest: upl });
 
-const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), cookiesFromBrowser: 'chrome', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', extractorArgs: 'youtube:player_client=web,android;skip=webpage' };
+const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), cookiesFromBrowser: 'chrome', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', extractorArgs: 'youtube:player_client=android' };
 const ytFlagsNoBrowser = { ...ytFlags, cookiesFromBrowser: undefined };
+const browserList = ['chrome', 'edge', 'brave', 'firefox'];
 const ffDir = path.dirname(ffmpegPath);
 
 function cleanUrl(url) {
@@ -113,24 +114,27 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
-    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--cookies-from-browser', 'chrome', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', '--extractor-args', 'youtube:player_client=web,android;skip=webpage'];
-    const p = spawn(getYtDlpPath(), args);
-    let stderr = '';
-    p.stderr.on('data', d => stderr += d);
-    p.on('close', c => {
-      if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else reject(new Error('Dosya bulunamadı')); return; }
-      if (stderr.includes('cookies') || stderr.includes('browser')) {
-        const fallback = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', '--extractor-args', 'youtube:player_client=web,android;skip=webpage'];
-        const p2 = spawn(getYtDlpPath(), fallback);
-        let err2 = '';
-        p2.stderr.on('data', d => err2 += d);
-        p2.on('close', c2 => { if (c2 !== 0) return reject(new Error(err2 || 'İndirme başarısız')); const f2 = findFile(outPath); if (f2) resolve(f2); else reject(new Error('Dosya bulunamadı')); });
-        p2.on('error', reject);
-      } else {
-        reject(new Error(stderr || 'İndirme başarısız'));
+    const baseArgs = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K', '--extractor-retries', '3'];
+    let browserIdx = 0;
+    function tryDownload() {
+      const args = [...baseArgs];
+      if (browserIdx < browserList.length) {
+        args.push('--cookies-from-browser', browserList[browserIdx]);
       }
-    });
-    p.on('error', reject);
+      const p = spawn(getYtDlpPath(), args);
+      let stderr = '';
+      p.stderr.on('data', d => stderr += d);
+      p.on('close', c => {
+        if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else reject(new Error('Dosya bulunamadı')); return; }
+        if (stderr.includes('cookies') || stderr.includes('browser') || stderr.includes('not found')) {
+          browserIdx++;
+          if (browserIdx < browserList.length) { tryDownload(); return; }
+        }
+        reject(new Error(stderr || 'İndirme başarısız'));
+      });
+      p.on('error', reject);
+    }
+    tryDownload();
   });
 }
 
