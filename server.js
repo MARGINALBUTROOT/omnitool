@@ -55,7 +55,8 @@ const upl = path.join(__dirname, 'uploads');
 [dls, prc, upl].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
 const upload = multer({ dest: upl });
 
-const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', extractorArgs: 'youtube:player_client=web,android;skip=webpage' };
+const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), cookiesFromBrowser: 'chrome', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', extractorArgs: 'youtube:player_client=web,android;skip=webpage' };
+const ytFlagsNoBrowser = { ...ytFlags, cookiesFromBrowser: undefined };
 const ffDir = path.dirname(ffmpegPath);
 
 function cleanUrl(url) {
@@ -101,16 +102,34 @@ function jsonWithTimeout(url, flags, ms) {
   });
 }
 
+async function ytInfo(url, ms) {
+  try { return await jsonWithTimeout(url, ytFlags, ms); } catch (e) {
+    try { return await jsonWithTimeout(url, ytFlagsNoBrowser, ms); } catch (e2) { throw e2; }
+  }
+}
+
 function sanitize(n) { return (n || 'video').replace(/[^\w\s]/gi, '').trim().substring(0, 50) || 'video'; }
 function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } catch (e) {} }
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
-    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', '--extractor-args', 'youtube:player_client=web,android;skip=webpage'];
+    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--cookies-from-browser', 'chrome', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', '--extractor-args', 'youtube:player_client=web,android;skip=webpage'];
     const p = spawn(getYtDlpPath(), args);
     let stderr = '';
     p.stderr.on('data', d => stderr += d);
-    p.on('close', c => { if (c !== 0) return reject(new Error(stderr || 'İndirme başarısız')); const f = findFile(outPath); if (f) resolve(f); else reject(new Error('Dosya bulunamadı')); });
+    p.on('close', c => {
+      if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else reject(new Error('Dosya bulunamadı')); return; }
+      if (stderr.includes('cookies') || stderr.includes('browser')) {
+        const fallback = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', '--extractor-args', 'youtube:player_client=web,android;skip=webpage'];
+        const p2 = spawn(getYtDlpPath(), fallback);
+        let err2 = '';
+        p2.stderr.on('data', d => err2 += d);
+        p2.on('close', c2 => { if (c2 !== 0) return reject(new Error(err2 || 'İndirme başarısız')); const f2 = findFile(outPath); if (f2) resolve(f2); else reject(new Error('Dosya bulunamadı')); });
+        p2.on('error', reject);
+      } else {
+        reject(new Error(stderr || 'İndirme başarısız'));
+      }
+    });
     p.on('error', reject);
   });
 }
@@ -137,7 +156,7 @@ app.post('/api/info', async (req, res) => {
       const data = await ytApiInfo(vid);
       return res.json(data);
     }
-    const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
+    const info = await ytInfo(url, YT_TIMEOUT);
     let formats = (info.formats || []).filter(f => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none');
     if (formats.length === 0) {
       formats = (info.formats || []).filter(f => f.vcodec && f.vcodec !== 'none')
@@ -177,7 +196,7 @@ app.post('/api/convert', async (req, res) => {
       }
     }
     if (!baseName) {
-      const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
+      const info = await ytInfo(url, YT_TIMEOUT);
       baseName = sanitize(info.title);
     }
     const ts = Date.now();
@@ -220,7 +239,7 @@ app.post('/api/trim', upload.single('video'), async (req, res) => {
       let { url } = req.body;
       if (!url) return res.status(400).json({ error: 'URL veya dosya gerekli' });
       url = cleanUrl(url);
-      const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
+      const info = await ytInfo(url, YT_TIMEOUT);
       baseName = sanitize(info.title);
       const ts = Date.now();
       inputPath = path.join(dls, `raw_${ts}.mp4`);
@@ -543,7 +562,7 @@ app.post('/api/compress', upload.single('video'), async (req, res) => {
       let { url } = req.body;
       if (!url) return res.status(400).json({ error: 'URL veya dosya gerekli' });
       url = cleanUrl(url);
-      const info = await jsonWithTimeout(url, ytFlags, YT_TIMEOUT);
+      const info = await ytInfo(url, YT_TIMEOUT);
       baseName = sanitize(info.title);
       const ts = Date.now();
       inputPath = path.join(dls, `raw_${ts}.mp4`);
