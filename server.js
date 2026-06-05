@@ -55,9 +55,7 @@ const upl = path.join(__dirname, 'uploads');
 [dls, prc, upl].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
 const upload = multer({ dest: upl });
 
-const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), cookiesFromBrowser: 'chrome', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36', extractorArgs: 'youtube:player_client=android' };
-const ytFlagsNoBrowser = { ...ytFlags, cookiesFromBrowser: undefined };
-const browserList = ['chrome', 'edge', 'brave', 'firefox'];
+const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', extractorArgs: 'youtube:player_client=android' };
 const ffDir = path.dirname(ffmpegPath);
 
 function cleanUrl(url) {
@@ -103,38 +101,24 @@ function jsonWithTimeout(url, flags, ms) {
   });
 }
 
-async function ytInfo(url, ms) {
-  try { return await jsonWithTimeout(url, ytFlags, ms); } catch (e) {
-    try { return await jsonWithTimeout(url, ytFlagsNoBrowser, ms); } catch (e2) { throw e2; }
-  }
-}
+function ytInfo(url, ms) { return jsonWithTimeout(url, ytFlags, ms); }
 
 function sanitize(n) { return (n || 'video').replace(/[^\w\s]/gi, '').trim().substring(0, 50) || 'video'; }
 function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } catch (e) {} }
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
-    const baseArgs = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K', '--extractor-retries', '3'];
-    let browserIdx = 0;
-    function tryDownload() {
-      const args = [...baseArgs];
-      if (browserIdx < browserList.length) {
-        args.push('--cookies-from-browser', browserList[browserIdx]);
-      }
-      const p = spawn(getYtDlpPath(), args);
-      let stderr = '';
-      p.stderr.on('data', d => stderr += d);
-      p.on('close', c => {
-        if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else reject(new Error('Dosya bulunamadı')); return; }
-        if (stderr.includes('cookies') || stderr.includes('browser') || stderr.includes('not found')) {
-          browserIdx++;
-          if (browserIdx < browserList.length) { tryDownload(); return; }
-        }
-        reject(new Error(stderr || 'İndirme başarısız'));
-      });
-      p.on('error', reject);
-    }
-    tryDownload();
+    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K', '--extractor-retries', '3'];
+    const p = spawn(getYtDlpPath(), args);
+    let stderr = '';
+    p.stderr.on('data', d => stderr += d);
+    p.on('close', c => {
+      if (c !== 0) return reject(new Error(stderr || 'İndirme başarısız'));
+      const f = findFile(outPath);
+      if (f) resolve(f);
+      else reject(new Error('Dosya bulunamadı'));
+    });
+    p.on('error', reject);
   });
 }
 
