@@ -96,18 +96,32 @@ function ensureCookies() {
 function ytInfo(url, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Zaman aşımı')), ms);
-    const args = [url, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K', '--extractor-retries', '3'];
-    const p = spawn(getYtDlpPath(), args);
-    let stdout = '', stderr = '';
-    p.stdout.on('data', d => stdout += d);
-    p.stderr.on('data', d => stderr += d);
-    p.on('close', c => {
-      clearTimeout(t);
-      if (c !== 0) return reject(new Error(stderr || 'Bilgi alınamadı'));
-      try { resolve(JSON.parse(stdout)); }
-      catch (e) { reject(new Error(stdout.slice(0, 200) || stderr.slice(0, 200) || 'JSON hatası')); }
-    });
-    p.on('error', e => { clearTimeout(t); reject(e); });
+    const strategies = [
+      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K'],
+      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--throttled-rate', '100K'],
+      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--throttled-rate', '100K'],
+    ];
+    let idx = 0;
+    function attempt() {
+      if (idx >= strategies.length) { clearTimeout(t); return reject(new Error('Tüm yöntemler başarısız')); }
+      const args = [url, ...strategies[idx]];
+      const p = spawn(getYtDlpPath(), args);
+      let stdout = '', stderr = '';
+      p.stdout.on('data', d => stdout += d);
+      p.stderr.on('data', d => stderr += d);
+      p.on('close', c => {
+        if (c === 0) {
+          clearTimeout(t);
+          try { resolve(JSON.parse(stdout)); }
+          catch (e) { idx++; attempt(); }
+        } else {
+          if (stderr.includes('bot') || stderr.includes('Sign in') || stderr.includes('403') || stderr.includes('429') || stderr.includes('confirm')) { idx++; attempt(); }
+          else { clearTimeout(t); reject(new Error(stderr || 'Bilgi alınamadı')); }
+        }
+      });
+      p.on('error', e => { clearTimeout(t); reject(e); });
+    }
+    attempt();
   });
 }
 
@@ -116,17 +130,26 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
-    const args = [url, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K', '--extractor-retries', '3'];
-    const p = spawn(getYtDlpPath(), args);
-    let stderr = '';
-    p.stderr.on('data', d => stderr += d);
-    p.on('close', c => {
-      if (c !== 0) return reject(new Error(stderr || 'İndirme başarısız'));
-      const f = findFile(outPath);
-      if (f) resolve(f);
-      else reject(new Error('Dosya bulunamadı'));
-    });
-    p.on('error', reject);
+    const strategies = [
+      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K'],
+      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--throttled-rate', '100K'],
+      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--throttled-rate', '100K'],
+    ];
+    let idx = 0;
+    function attempt() {
+      if (idx >= strategies.length) return reject(new Error('İndirme başarısız (tüm yöntemler denendi)'));
+      const args = [url, ...strategies[idx]];
+      const p = spawn(getYtDlpPath(), args);
+      let stderr = '';
+      p.stderr.on('data', d => stderr += d);
+      p.on('close', c => {
+        if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else reject(new Error('Dosya bulunamadı')); return; }
+        if (stderr.includes('bot') || stderr.includes('Sign in') || stderr.includes('403') || stderr.includes('429') || stderr.includes('confirm')) { idx++; attempt(); }
+        else reject(new Error(stderr || 'İndirme başarısız'));
+      });
+      p.on('error', reject);
+    }
+    attempt();
   });
 }
 
@@ -705,7 +728,7 @@ async function ensureBinary() {
   console.log('yt-dlp hazır (' + (buf.length / 1024 / 1024).toFixed(1) + ' MB)');
 }
 
-ensureBinary().then(() => { ensureCookies(); ensurePdfFont().then(() => app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`))); });
+ensureBinary().then(() => { ensurePdfFont().then(() => app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`))); });
 async function ensurePdfFont() {
   const fontPath = path.join(__dirname, 'DejaVuSans.ttf');
   if (fs.existsSync(fontPath)) { pdfFontBytes = fs.readFileSync(fontPath); console.log('Font hazır'); return; }
