@@ -97,9 +97,10 @@ function ytInfo(url, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Zaman aşımı')), ms);
     const strategies = [
-      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K'],
-      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--throttled-rate', '100K'],
-      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--throttled-rate', '100K'],
+      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
+      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
+      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
+      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
     function attempt() {
@@ -131,9 +132,10 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
     const strategies = [
-      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K'],
-      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--throttled-rate', '100K'],
-      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--throttled-rate', '100K'],
+      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
+      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
+      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
+      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
     function attempt() {
@@ -175,7 +177,13 @@ app.post('/api/info', async (req, res) => {
       const data = await ytApiInfo(vid);
       return res.json(data);
     }
-    const info = await ytInfo(url, YT_TIMEOUT);
+    const info = await ytInfo(url, YT_TIMEOUT).catch(async (e) => {
+      if (isYt && YT_API_KEY) {
+        const vid = u.searchParams.get('v') || (u.hostname === 'youtu.be' ? u.pathname.slice(1).split('/')[0] : '');
+        if (vid) return await ytApiInfo(vid);
+      }
+      throw e;
+    });
     let formats = (info.formats || []).filter(f => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none');
     if (formats.length === 0) {
       formats = (info.formats || []).filter(f => f.vcodec && f.vcodec !== 'none')
