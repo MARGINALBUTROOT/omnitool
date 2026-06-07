@@ -1,5 +1,5 @@
 const express = require('express');
-const { json, download } = require('@distube/yt-dlp');
+const { download } = require('@distube/yt-dlp');
 const { spawn } = require('child_process');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
@@ -55,7 +55,6 @@ const upl = path.join(__dirname, 'uploads');
 [dls, prc, upl].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
 const upload = multer({ dest: upl });
 
-const ytFlags = { dumpSingleJson: true, skipDownload: true, noWarnings: true, quiet: true, noPlaylist: true, geoBypass: true, cookies: path.join(__dirname, 'cookies.txt'), userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', extractorArgs: 'youtube:player_client=android' };
 const ffDir = path.dirname(ffmpegPath);
 
 function cleanUrl(url) {
@@ -94,14 +93,23 @@ function ensureCookies() {
   }
 }
 
-function jsonWithTimeout(url, flags, ms) {
+function ytInfo(url, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Zaman aşımı')), ms);
-    json(url, flags).then(r => { clearTimeout(t); resolve(r); }).catch(e => { clearTimeout(t); reject(e); });
+    const args = [url, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--cookies', getCookiePath(), '--user-agent', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36', '--extractor-args', 'youtube:player_client=android', '--throttled-rate', '100K', '--extractor-retries', '3'];
+    const p = spawn(getYtDlpPath(), args);
+    let stdout = '', stderr = '';
+    p.stdout.on('data', d => stdout += d);
+    p.stderr.on('data', d => stderr += d);
+    p.on('close', c => {
+      clearTimeout(t);
+      if (c !== 0) return reject(new Error(stderr || 'Bilgi alınamadı'));
+      try { resolve(JSON.parse(stdout)); }
+      catch (e) { reject(new Error(stdout.slice(0, 200) || stderr.slice(0, 200) || 'JSON hatası')); }
+    });
+    p.on('error', e => { clearTimeout(t); reject(e); });
   });
 }
-
-function ytInfo(url, ms) { return jsonWithTimeout(url, ytFlags, ms); }
 
 function sanitize(n) { return (n || 'video').replace(/[^\w\s]/gi, '').trim().substring(0, 50) || 'video'; }
 function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } catch (e) {} }
