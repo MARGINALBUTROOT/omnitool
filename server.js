@@ -83,9 +83,12 @@ function getYtDlpPath() {
 
 function getCookiePath() {
   const kick = path.join(__dirname, 'kick.txt');
-  if (fs.existsSync(kick)) return kick;
-  return path.join(__dirname, 'cookies.txt');
+  if (fs.existsSync(kick) && fs.statSync(kick).size > 10) return kick;
+  const cookies = path.join(__dirname, 'cookies.txt');
+  if (fs.existsSync(cookies) && fs.statSync(cookies).size > 10) return cookies;
+  return '';
 }
+function cookieFlags() { const p = getCookiePath(); return p ? ['--cookies', p] : []; }
 
 function ensureCookies() {
   const cp = getCookiePath();
@@ -104,7 +107,7 @@ function isYtUrl(url) {
 function ytInfo(url, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Zaman aşımı')), ms);
-    const ck = fs.existsSync(getCookiePath()) ? ['--cookies', getCookiePath()] : [];
+    const ck = cookieFlags();
     const isYt = isYtUrl(url);
     const strategies = isYt ? [
       [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
@@ -144,7 +147,7 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
-    const ck = fs.existsSync(getCookiePath()) ? ['--cookies', getCookiePath()] : [];
+    const ck = cookieFlags();
     const isYt = isYtUrl(url);
     const strategies = isYt ? [
       [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
