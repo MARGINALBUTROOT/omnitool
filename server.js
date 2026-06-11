@@ -100,14 +100,21 @@ function ensureCookies() {
   }
 }
 
+function isYtUrl(url) {
+  try { const u = new URL(url); return u.hostname.includes('youtube.com') || u.hostname === 'youtu.be'; } catch { return false; }
+}
+
 function ytInfo(url, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Zaman aşımı')), ms);
     const ck = fs.existsSync(getCookiePath()) ? ['--cookies', getCookiePath()] : [];
-    const strategies = [
+    const isYt = isYtUrl(url);
+    const strategies = isYt ? [
       [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
       [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
       [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass'],
+    ] : [
       [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
@@ -139,10 +146,13 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
     const ck = fs.existsSync(getCookiePath()) ? ['--cookies', getCookiePath()] : [];
-    const strategies = [
+    const isYt = isYtUrl(url);
+    const strategies = isYt ? [
       [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
       [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
       [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass'],
+    ] : [
       [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
