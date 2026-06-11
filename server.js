@@ -101,11 +101,12 @@ function ensureCookies() {
 function ytInfo(url, ms) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Zaman aşımı')), ms);
+    const ck = fs.existsSync(getCookiePath()) ? ['--cookies', getCookiePath()] : [];
     const strategies = [
-      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
-      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
-      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
-      ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass'],
+      [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
     function attempt() {
@@ -135,11 +136,12 @@ function safeUnlink(p) { try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } ca
 
 function dlSync(url, fmt, outPath) {
   return new Promise((resolve, reject) => {
+    const ck = fs.existsSync(getCookiePath()) ? ['--cookies', getCookiePath()] : [];
     const strategies = [
-      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
-      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
-      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
-      ['-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass'],
+      [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=web', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass', '--extractor-args', 'youtube:player_client=android,tv', '--extractor-args', 'youtube:skip=webpage'],
+      [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
     function attempt() {
@@ -735,7 +737,7 @@ async function ensureBinary() {
   console.log('yt-dlp hazır (' + (buf.length / 1024 / 1024).toFixed(1) + ' MB)');
 }
 
-ensureBinary().then(() => { ensurePdfFont().then(() => app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`))); });
+ensureBinary().then(() => { ensureCookies(); ensurePdfFont().then(() => app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`))); });
 async function ensurePdfFont() {
   const fontPath = path.join(__dirname, 'DejaVuSans.ttf');
   if (fs.existsSync(fontPath)) { pdfFontBytes = fs.readFileSync(fontPath); console.log('Font hazır'); return; }
