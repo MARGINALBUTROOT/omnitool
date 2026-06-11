@@ -85,6 +85,8 @@ function getYtDlpPath() {
 }
 
 function getCookiePath() {
+  const kick = path.join(__dirname, 'kick.txt');
+  if (fs.existsSync(kick)) return kick;
   return path.join(__dirname, 'cookies.txt');
 }
 
