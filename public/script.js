@@ -156,7 +156,7 @@ convertBtn.addEventListener('click', async () => {
 
 sendToTrimBtn.addEventListener('click', () => {
   if (!convUrlValue) return;
-  document.querySelectorAll('.tab-btn')[7].click();
+  document.querySelector('.tab-btn[data-tab="trim"]').click();
   loadTrimVideo(convUrlValue, convTitleText);
 });
 

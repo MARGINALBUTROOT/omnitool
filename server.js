@@ -19,6 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const YT_TIMEOUT = 40000;
 const YT_API_KEY = process.env.YOUTUBE_API_KEY || '';
+let pdfFontBytes = null;
 
 function parseIsoDuration(d) {
   const m = d.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -68,6 +69,10 @@ function cleanUrl(url) {
       const m = u.pathname.match(/\/p\/([^\/]+)/) || u.pathname.match(/\/reel\/([^\/]+)/) || u.pathname.match(/\/tv\/([^\/]+)/);
       if (m) return `https://www.instagram.com/p/${m[1]}/`;
     }
+    if (u.hostname.includes('kick.com')) {
+      const m = u.pathname.match(/\/video\/([a-zA-Z0-9]+)/);
+      if (m) return `https://kick.com/video/${m[1]}`;
+    }
     return url;
   } catch {}
   return url;
@@ -116,8 +121,7 @@ function ytInfo(url, ms) {
           try { resolve(JSON.parse(stdout)); }
           catch (e) { idx++; attempt(); }
         } else {
-          if (stderr.includes('bot') || stderr.includes('Sign in') || stderr.includes('403') || stderr.includes('429') || stderr.includes('confirm')) { idx++; attempt(); }
-          else { clearTimeout(t); reject(new Error(stderr || 'Bilgi alınamadı')); }
+          idx++; attempt();
         }
       });
       p.on('error', e => { clearTimeout(t); reject(e); });
@@ -145,9 +149,8 @@ function dlSync(url, fmt, outPath) {
       let stderr = '';
       p.stderr.on('data', d => stderr += d);
       p.on('close', c => {
-        if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else reject(new Error('Dosya bulunamadı')); return; }
-        if (stderr.includes('bot') || stderr.includes('Sign in') || stderr.includes('403') || stderr.includes('429') || stderr.includes('confirm')) { idx++; attempt(); }
-        else reject(new Error(stderr || 'İndirme başarısız'));
+        if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else { idx++; attempt(); } return; }
+        idx++; attempt();
       });
       p.on('error', reject);
     }
@@ -218,8 +221,7 @@ app.post('/api/convert', async (req, res) => {
     if (isYt && YT_API_KEY) {
       const vid = u.searchParams.get('v') || (u.hostname === 'youtu.be' ? u.pathname.slice(1).split('/')[0] : '');
       if (vid) {
-        const data = await ytApiInfo(vid);
-        baseName = sanitize(data.title);
+        try { const data = await ytApiInfo(vid); baseName = sanitize(data.title); } catch (e) {}
       }
     }
     if (!baseName) {
@@ -649,23 +651,19 @@ app.post('/api/slideshow', upload.any(), async (req, res) => {
 
     // Build xfade chain
     const filterParts = [];
+    const step = dur - transDur; // time between segment starts
     for (let i = 0; i < tempVids.length; i++) {
-      const offset = i === 0 ? 0 : (i * dur) + ((i - 1) * transDur);
-      filterParts.push(`[${i}]settb=AVTB,setpts=PTS-STARTPTS+${offset}/TB[${i}v]`);
+      filterParts.push(`[${i}]settb=AVTB,setpts=PTS-STARTPTS+${i * step}/TB[${i}v]`);
     }
-    const maxOff = tempVids.length > 1 ? ((tempVids.length - 1) * dur) + ((tempVids.length - 2) * transDur) + dur : dur;
-    let lastLabel = `${tempVids.length - 1}v`;
+    const maxOff = tempVids.length * step + transDur;
+    let prev = '0v';
     for (let i = 0; i < tempVids.length - 1; i++) {
-      const xfadeOff = ((i + 1) * dur) + (i * transDur);
-      const label = i === tempVids.length - 2 ? 'out' : `t${i}`;
-      const inputA = label.startsWith('t') ? lastLabel : `${i}v`;
-      const inputB = `${i + 1}v`;
-      filterParts.push(`[${inputA}][${inputB}]xfade=transition=${transition}:duration=${transDur}:offset=${xfadeOff},format=yuv420p${label === 'out' ? '[out]' : `[${label}]`}`);
-      if (!label.startsWith('t')) lastLabel = label;
+      const xfadeOff = (i + 1) * step;
+      const outLabel = i === tempVids.length - 2 ? 'out' : `t${i}`;
+      filterParts.push(`[${prev}][${i+1}v]xfade=transition=${transition}:duration=${transDur}:offset=${xfadeOff},format=yuv420p${outLabel === 'out' ? '[out]' : `[${outLabel}]`}`);
+      prev = outLabel;
     }
-    if (tempVids.length === 1) {
-      filterParts.push(`[0]copy[out]`);
-    }
+    if (tempVids.length === 1) filterParts.push('[0]copy[out]');
 
     const tempConcat = path.join(prc, `concat_${baseName}.mp4`);
     const fcArgs = [];
@@ -703,7 +701,8 @@ app.post('/api/slideshow', upload.any(), async (req, res) => {
 });
 
 app.get('/api/download/:file', (req, res) => {
-  const fp = path.join(prc, req.params.file);
+  const name = path.basename(req.params.file);
+  const fp = path.join(prc, name);
   if (!fs.existsSync(fp)) return res.status(404).json({ error: 'Dosya bulunamadı' });
   res.download(fp, () => { setTimeout(() => safeUnlink(fp), 60000); });
 });
