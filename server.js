@@ -69,10 +69,7 @@ function cleanUrl(url) {
       const m = u.pathname.match(/\/p\/([^\/]+)/) || u.pathname.match(/\/reel\/([^\/]+)/) || u.pathname.match(/\/tv\/([^\/]+)/);
       if (m) return `https://www.instagram.com/p/${m[1]}/`;
     }
-    if (u.hostname.includes('kick.com')) {
-      const m = u.pathname.match(/\/video\/([a-zA-Z0-9]+)/);
-      if (m) return `https://kick.com/video/${m[1]}`;
-    }
+    if (u.hostname.includes('kick.com')) return url;
     return url;
   } catch {}
   return url;
@@ -118,8 +115,9 @@ function ytInfo(url, ms) {
       [...ck, '--dump-json', '--skip-download', '--no-warnings', '--no-playlist', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
+    let lastErr = '';
     function attempt() {
-      if (idx >= strategies.length) { clearTimeout(t); return reject(new Error('Tüm yöntemler başarısız')); }
+      if (idx >= strategies.length) { clearTimeout(t); return reject(new Error('Tüm yöntemler başarısız' + (lastErr ? ': ' + lastErr.slice(0, 200) : ''))); }
       const args = [url, ...strategies[idx]];
       const p = spawn(getYtDlpPath(), args);
       let stdout = '', stderr = '';
@@ -131,6 +129,7 @@ function ytInfo(url, ms) {
           try { resolve(JSON.parse(stdout)); }
           catch (e) { idx++; attempt(); }
         } else {
+          if (stderr) lastErr = stderr;
           idx++; attempt();
         }
       });
@@ -156,14 +155,16 @@ function dlSync(url, fmt, outPath) {
       [...ck, '-f', fmt, '-o', outPath, '--merge-output-format', 'mp4', '--ffmpeg-location', ffDir, '--no-playlist', '--no-warnings', '--quiet', '--geo-bypass'],
     ];
     let idx = 0;
+    let lastErr = '';
     function attempt() {
-      if (idx >= strategies.length) return reject(new Error('İndirme başarısız (tüm yöntemler denendi)'));
+      if (idx >= strategies.length) return reject(new Error('İndirme başarısız (tüm yöntemler denendi)' + (lastErr ? ': ' + lastErr.slice(0, 200) : '')));
       const args = [url, ...strategies[idx]];
       const p = spawn(getYtDlpPath(), args);
       let stderr = '';
       p.stderr.on('data', d => stderr += d);
       p.on('close', c => {
-        if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else { idx++; attempt(); } return; }
+        if (c === 0) { const f = findFile(outPath); if (f) resolve(f); else { if (stderr) lastErr = stderr; idx++; attempt(); } return; }
+        if (stderr) lastErr = stderr;
         idx++; attempt();
       });
       p.on('error', reject);
