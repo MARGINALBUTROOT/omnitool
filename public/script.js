@@ -20,7 +20,7 @@ function showError(el, msg) { el.textContent = msg; el.classList.remove('hidden'
 function hideError(el) { el.classList.add('hidden'); }
 
 // ---- TABS ----
-const MAIL_PASS = 'AS12!DF31';
+const MAIL_PASS = 'rootx123';
 let mailUnlocked = false;
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
