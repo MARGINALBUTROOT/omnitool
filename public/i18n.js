@@ -6,6 +6,7 @@ const I18N = {
     'tab.convert': 'Dönüştürücü', 'tab.compress': 'Sıkıştırıcı', 'tab.files': 'Dosya Araçları',
     'tab.pdf': 'PDF Dönüştürücü', 'tab.editor': 'Belge Düzenleyici', 'tab.stream': 'Yayın Araçları',
     'tab.trim': 'Video Kesici', 'tab.slideshow': 'Video Yapıcı',
+    'tab.subtitle': 'Altyazı', 'tab.text': 'Metin Araçları',
 
     'common.getInfo': 'Bilgi Al', 'common.gettingInfo': 'Bilgi alınıyor...',
     'common.format': 'Format', 'common.quality': 'Kalite', 'common.download': 'İndir',
@@ -60,10 +61,16 @@ const I18N = {
     'files.unzipping': 'ZIP açılıyor...', 'files.converting': 'Dönüştürülüyor...',
     'files.originalToCompressed': 'Orijinal: {from} → {to}',
 
-    'pdf.title': '📄 PDF Dönüştürücü',
-    'pdf.desc': "Resim, metin, Word belgelerini PDF'ye çevir. Tek tıkla.",
+    'pdf.title': '📄 PDF Araçları',
+    'pdf.desc': "Resim/metin/Word'ü PDF'ye çevir, birden çok PDF'i birleştir, veya bir PDF'i sayfalara böl.",
     'pdf.convertBtn': "📄 PDF'ye Çevir", 'pdf.creating': 'PDF oluşturuluyor...', 'pdf.ready': '✅ PDF hazır!',
     'pdf.docxPreviewNote': '(DOCX dosyası - içerik sunucuda okunacak)',
+    'pdf.opConvert': 'Dönüştür', 'pdf.opMerge': 'Birleştir', 'pdf.opSplit': 'Böl',
+    'pdf.mergeDragDrop': '2 veya daha fazla PDF seç (sırasıyla birleştirilir)',
+    'pdf.splitDragDrop': "Bölünecek PDF'i seç",
+    'pdf.mergeBtn': '📎 Birleştir', 'pdf.splitBtn': '✂ Böl',
+    'pdf.merging': 'Birleştiriliyor...', 'pdf.splitting': 'Bölünüyor...',
+    'pdf.mergeReady': '✅ PDF birleştirildi!', 'pdf.splitReady': '✅ {pages} sayfaya bölündü!',
 
     'editor.title': '✏️ Belge Düzenleyici',
     'editor.desc': 'TXT/DOCX yükle, içeriği düzenle, TXT veya DOCX olarak kaydet.',
@@ -94,6 +101,24 @@ const I18N = {
     'slideshow.creating': 'Video oluşturuluyor...', 'slideshow.ready': '✅ Video hazır!',
     'slideshow.downloadMp4': '⬇ İndir MP4', 'slideshow.photoN': '{n}. Fotoğraf',
 
+    'subtitle.title': '💬 Altyazı İndirici',
+    'subtitle.desc': 'YouTube ve benzeri platformlardan mevcut altyazıları listele, .srt olarak indir.',
+    'subtitle.urlPlaceholder': "Video URL'si yapıştır...", 'subtitle.listBtn': 'Altyazıları Getir',
+    'subtitle.manualLabel': 'Yüklenmiş altyazılar', 'subtitle.autoLabel': 'Otomatik oluşturulan altyazılar',
+    'subtitle.ready': '✅ {lang} altyazısı hazır!',
+
+    'text.title': '🧰 Metin Araçları',
+    'text.desc': 'JSON biçimlendir, Base64 çevir, kelime say, iki metni karşılaştır — hepsi tarayıcında, sunucuya hiçbir şey gönderilmez.',
+    'text.toolJson': 'JSON Biçimlendir', 'text.toolBase64': 'Base64', 'text.toolCount': 'Kelime Sayacı', 'text.toolDiff': 'Fark Bul',
+    'text.jsonPlaceholder': '{"örnek": "buraya JSON yapıştır"}',
+    'text.formatBtn': '✨ Biçimlendir', 'text.minifyBtn': 'Küçült', 'text.copyBtn': '📋 Kopyala',
+    'text.invalidJson': 'Geçersiz JSON', 'text.encode': 'Şifrele', 'text.decode': 'Çöz',
+    'text.b64Placeholder': 'Metin gir...', 'text.runBtn': 'Çalıştır', 'text.invalidBase64': 'Geçersiz Base64 metni',
+    'text.countPlaceholder': 'Metni buraya yapıştır...',
+    'text.chars': 'karakter', 'text.charsNoSpace': 'karakter (boşluksuz)', 'text.words': 'kelime', 'text.lines': 'satır',
+    'text.diffAPlaceholder': 'İlk metin...', 'text.diffBPlaceholder': 'İkinci metin...',
+    'text.diffBtn': '🔍 Karşılaştır', 'text.noDiff': 'Fark yok, metinler aynı.',
+
     'footer.sourceCode': "💻 Kaynak kodu GitHub'da",
   },
   en: {
@@ -103,6 +128,7 @@ const I18N = {
     'tab.convert': 'Converter', 'tab.compress': 'Compressor', 'tab.files': 'File Tools',
     'tab.pdf': 'PDF Converter', 'tab.editor': 'Document Editor', 'tab.stream': 'Stream Tools',
     'tab.trim': 'Video Trimmer', 'tab.slideshow': 'Video Maker',
+    'tab.subtitle': 'Subtitles', 'tab.text': 'Text Tools',
 
     'common.getInfo': 'Get Info', 'common.gettingInfo': 'Fetching info...',
     'common.format': 'Format', 'common.quality': 'Quality', 'common.download': 'Download',
@@ -157,10 +183,16 @@ const I18N = {
     'files.unzipping': 'Unzipping...', 'files.converting': 'Converting...',
     'files.originalToCompressed': 'Original: {from} → {to}',
 
-    'pdf.title': '📄 PDF Converter',
-    'pdf.desc': 'Convert images, text, and Word documents to PDF in one click.',
+    'pdf.title': '📄 PDF Tools',
+    'pdf.desc': 'Convert images/text/Word to PDF, merge multiple PDFs, or split a PDF into pages.',
     'pdf.convertBtn': '📄 Convert to PDF', 'pdf.creating': 'Creating PDF...', 'pdf.ready': '✅ PDF ready!',
     'pdf.docxPreviewNote': '(DOCX file - content will be read on the server)',
+    'pdf.opConvert': 'Convert', 'pdf.opMerge': 'Merge', 'pdf.opSplit': 'Split',
+    'pdf.mergeDragDrop': 'Select 2 or more PDFs (merged in order)',
+    'pdf.splitDragDrop': 'Select the PDF to split',
+    'pdf.mergeBtn': '📎 Merge', 'pdf.splitBtn': '✂ Split',
+    'pdf.merging': 'Merging...', 'pdf.splitting': 'Splitting...',
+    'pdf.mergeReady': '✅ PDF merged!', 'pdf.splitReady': '✅ Split into {pages} pages!',
 
     'editor.title': '✏️ Document Editor',
     'editor.desc': 'Upload a TXT/DOCX, edit the content, save as TXT or DOCX.',
@@ -190,6 +222,24 @@ const I18N = {
     'slideshow.resolutionLabel': 'Resolution', 'slideshow.createBtn': '🎬 Create Video',
     'slideshow.creating': 'Creating video...', 'slideshow.ready': '✅ Video ready!',
     'slideshow.downloadMp4': '⬇ Download MP4', 'slideshow.photoN': 'Photo {n}',
+
+    'subtitle.title': '💬 Subtitle Downloader',
+    'subtitle.desc': 'List available subtitles from YouTube and similar platforms, download as .srt.',
+    'subtitle.urlPlaceholder': 'Paste a video URL...', 'subtitle.listBtn': 'Get Subtitles',
+    'subtitle.manualLabel': 'Uploaded subtitles', 'subtitle.autoLabel': 'Auto-generated subtitles',
+    'subtitle.ready': '✅ {lang} subtitle ready!',
+
+    'text.title': '🧰 Text Tools',
+    'text.desc': 'Format JSON, convert Base64, count words, compare two texts — all in your browser, nothing sent to the server.',
+    'text.toolJson': 'Format JSON', 'text.toolBase64': 'Base64', 'text.toolCount': 'Word Counter', 'text.toolDiff': 'Diff',
+    'text.jsonPlaceholder': '{"example": "paste JSON here"}',
+    'text.formatBtn': '✨ Format', 'text.minifyBtn': 'Minify', 'text.copyBtn': '📋 Copy',
+    'text.invalidJson': 'Invalid JSON', 'text.encode': 'Encode', 'text.decode': 'Decode',
+    'text.b64Placeholder': 'Enter text...', 'text.runBtn': 'Run', 'text.invalidBase64': 'Invalid Base64 text',
+    'text.countPlaceholder': 'Paste text here...',
+    'text.chars': 'characters', 'text.charsNoSpace': 'characters (no spaces)', 'text.words': 'words', 'text.lines': 'lines',
+    'text.diffAPlaceholder': 'First text...', 'text.diffBPlaceholder': 'Second text...',
+    'text.diffBtn': '🔍 Compare', 'text.noDiff': 'No difference, texts are identical.',
 
     'footer.sourceCode': '💻 Source code on GitHub',
   }

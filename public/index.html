@@ -27,6 +27,8 @@
       <button class="tab-btn" data-tab="stream" data-i18n="tab.stream">Yayın Araçları</button>
       <button class="tab-btn" data-tab="trim" data-i18n="tab.trim">Video Kesici</button>
       <button class="tab-btn" data-tab="slideshow" data-i18n="tab.slideshow">Video Yapıcı</button>
+      <button class="tab-btn" data-tab="subtitle" data-i18n="tab.subtitle">Altyazı</button>
+      <button class="tab-btn" data-tab="text" data-i18n="tab.text">Metin Araçları</button>
     </div>
 
     <!-- CONVERT TAB -->
@@ -191,22 +193,66 @@
     <!-- PDF TAB -->
     <section id="tab-pdf" class="tab-content">
       <div class="card">
-        <h3 data-i18n="pdf.title">📄 PDF Dönüştürücü</h3>
-        <p class="card-desc" data-i18n="pdf.desc">Resim, metin, Word belgelerini PDF'ye çevir. Tek tıkla.</p>
-        <div class="upload-area" id="pdfUploadArea">
-          <p data-i18n="common.dragDropFile">Dosyayı sürükle-bırak veya tıkla seç</p>
-          <input type="file" id="pdfFileInput" hidden>
-          <button id="pdfSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
+        <h3 data-i18n="pdf.title">📄 PDF Araçları</h3>
+        <p class="card-desc" data-i18n="pdf.desc">Resim/metin/Word'ü PDF'ye çevir, birden çok PDF'i birleştir, veya bir PDF'i sayfalara böl.</p>
+
+        <div class="convert-options" style="margin-bottom:1rem">
+          <div class="option-group">
+            <label data-i18n="common.operation">İşlem</label>
+            <div class="radio-group" id="pdfOps">
+              <label class="radio"><input type="radio" name="pdfOp" value="convert" checked> <span data-i18n="pdf.opConvert">Dönüştür</span></label>
+              <label class="radio"><input type="radio" name="pdfOp" value="merge"> <span data-i18n="pdf.opMerge">Birleştir</span></label>
+              <label class="radio"><input type="radio" name="pdfOp" value="split"> <span data-i18n="pdf.opSplit">Böl</span></label>
+            </div>
+          </div>
         </div>
-        <div id="pdfFileInfo" class="hidden" style="margin-bottom:0.8rem">
-          <p id="pdfFileName" class="file-name"></p>
-          <button id="pdfClearBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
+
+        <div id="pdfConvertBlock">
+          <div class="upload-area" id="pdfUploadArea">
+            <p data-i18n="common.dragDropFile">Dosyayı sürükle-bırak veya tıkla seç</p>
+            <input type="file" id="pdfFileInput" hidden>
+            <button id="pdfSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
+          </div>
+          <div id="pdfFileInfo" class="hidden" style="margin-bottom:0.8rem">
+            <p id="pdfFileName" class="file-name"></p>
+            <button id="pdfClearBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
+          </div>
         </div>
+
+        <div id="pdfMergeBlock" class="hidden">
+          <div class="upload-area" id="pdfMergeUploadArea">
+            <p data-i18n="pdf.mergeDragDrop">2 veya daha fazla PDF seç (sırasıyla birleştirilir)</p>
+            <input type="file" id="pdfMergeFileInput" accept="application/pdf" multiple hidden>
+            <button id="pdfMergeSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
+          </div>
+          <div id="pdfMergeFileList" style="margin-bottom:0.8rem;font-size:0.85rem;color:var(--text-secondary)"></div>
+        </div>
+
+        <div id="pdfSplitBlock" class="hidden">
+          <div class="upload-area" id="pdfSplitUploadArea">
+            <p data-i18n="pdf.splitDragDrop">Bölünecek PDF'i seç</p>
+            <input type="file" id="pdfSplitFileInput" accept="application/pdf" hidden>
+            <button id="pdfSplitSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
+          </div>
+          <div id="pdfSplitFileInfo" class="hidden" style="margin-bottom:0.8rem">
+            <p id="pdfSplitFileName" class="file-name"></p>
+            <button id="pdfSplitClearBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
+          </div>
+        </div>
+
         <div id="pdfError" class="error-msg hidden"></div>
+
         <div id="pdfSection" class="hidden" style="margin-top:1rem">
           <div id="pdfPreview" class="hidden" style="margin-bottom:1rem;padding:1rem;background:var(--card-bg);border-radius:8px;max-height:300px;overflow:auto;white-space:pre-wrap;font-size:0.85rem;color:var(--text-secondary);border:1px solid var(--border)"></div>
           <button id="pdfConvertBtn" class="btn btn-accent" data-i18n="pdf.convertBtn">📄 PDF'ye Çevir</button>
         </div>
+        <div id="pdfMergeAction" class="hidden" style="margin-top:1rem">
+          <button id="pdfMergeBtn" class="btn btn-accent" data-i18n="pdf.mergeBtn">📎 Birleştir</button>
+        </div>
+        <div id="pdfSplitAction" class="hidden" style="margin-top:1rem">
+          <button id="pdfSplitBtn" class="btn btn-accent" data-i18n="pdf.splitBtn">✂ Böl</button>
+        </div>
+
         <div id="pdfProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="pdfProgressFill" class="progress-fill"></div></div>
           <p id="pdfProgressText" data-i18n="pdf.creating">PDF oluşturuluyor...</p>
@@ -458,6 +504,92 @@
         <div id="ssResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
           <p style="color:var(--green);font-weight:600" data-i18n="slideshow.ready">✅ Video hazır!</p>
           <button id="ssDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="slideshow.downloadMp4">⬇ İndir MP4</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUBTITLE TAB -->
+    <section id="tab-subtitle" class="tab-content">
+      <div class="card">
+        <h3 data-i18n="subtitle.title">💬 Altyazı İndirici</h3>
+        <p class="card-desc" data-i18n="subtitle.desc">YouTube ve benzeri platformlardan mevcut altyazıları listele, .srt olarak indir.</p>
+        <div class="url-input-wrapper">
+          <input type="text" id="subUrl" data-i18n-placeholder="subtitle.urlPlaceholder" placeholder="Video URL'si yapıştır..." class="url-input">
+          <button id="subLoadBtn" class="btn btn-primary" data-i18n="subtitle.listBtn">Altyazıları Getir</button>
+        </div>
+        <div id="subError" class="error-msg hidden"></div>
+      </div>
+
+      <div id="subResult" class="card hidden">
+        <h2 id="subTitle" style="font-size:1.05rem;margin-bottom:0.8rem"></h2>
+        <div id="subManualGroup" class="hidden" style="margin-bottom:0.8rem">
+          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.5rem" data-i18n="subtitle.manualLabel">Yüklenmiş altyazılar</label>
+          <div id="subManualList" style="display:flex;flex-wrap:wrap;gap:0.4rem"></div>
+        </div>
+        <div id="subAutoGroup" class="hidden">
+          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.5rem" data-i18n="subtitle.autoLabel">Otomatik oluşturulan altyazılar</label>
+          <div id="subAutoList" style="display:flex;flex-wrap:wrap;gap:0.4rem"></div>
+        </div>
+        <div id="subProgress" class="progress-area hidden">
+          <div class="progress-bar"><div id="subProgressFill" class="progress-fill"></div></div>
+          <p id="subProgressText" data-i18n="common.processing">İşleniyor...</p>
+        </div>
+        <div id="subDone" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
+          <p id="subDoneText" style="color:var(--green);font-weight:600"></p>
+          <button id="subDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="common.downloadBtn">⬇ İndir</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEXT TOOLS TAB -->
+    <section id="tab-text" class="tab-content">
+      <div class="card">
+        <h3 data-i18n="text.title">🧰 Metin Araçları</h3>
+        <p class="card-desc" data-i18n="text.desc">JSON biçimlendir, Base64 çevir, kelime say, iki metni karşılaştır — hepsi tarayıcında, sunucuya hiçbir şey gönderilmez.</p>
+        <div class="radio-group" id="textTools" style="flex-wrap:wrap;gap:0.6rem;margin-bottom:1rem">
+          <label class="radio"><input type="radio" name="ttool" value="json" checked> <span data-i18n="text.toolJson">JSON Biçimlendir</span></label>
+          <label class="radio"><input type="radio" name="ttool" value="base64"> <span data-i18n="text.toolBase64">Base64</span></label>
+          <label class="radio"><input type="radio" name="ttool" value="count"> <span data-i18n="text.toolCount">Kelime Sayacı</span></label>
+          <label class="radio"><input type="radio" name="ttool" value="diff"> <span data-i18n="text.toolDiff">Fark Bul</span></label>
+        </div>
+
+        <div id="ttJson">
+          <textarea id="ttJsonInput" data-i18n-placeholder="text.jsonPlaceholder" placeholder='{"örnek": "buraya JSON yapıştır"}' style="width:100%;min-height:180px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.85rem;resize:vertical"></textarea>
+          <div style="display:flex;gap:0.5rem;margin:0.8rem 0;flex-wrap:wrap">
+            <button id="ttJsonFormatBtn" class="btn btn-accent" data-i18n="text.formatBtn">✨ Biçimlendir</button>
+            <button id="ttJsonMinifyBtn" class="btn btn-outline" data-i18n="text.minifyBtn">Küçült</button>
+            <button id="ttJsonCopyBtn" class="btn btn-secondary" data-i18n="text.copyBtn">📋 Kopyala</button>
+          </div>
+          <div id="ttJsonError" class="error-msg hidden"></div>
+          <textarea id="ttJsonOutput" readonly style="width:100%;min-height:180px;background:var(--bg-input);color:var(--green);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.85rem;resize:vertical"></textarea>
+        </div>
+
+        <div id="ttBase64" class="hidden">
+          <div class="radio-group" style="margin-bottom:0.6rem">
+            <label class="radio"><input type="radio" name="b64mode" value="encode" checked> <span data-i18n="text.encode">Şifrele</span></label>
+            <label class="radio"><input type="radio" name="b64mode" value="decode"> <span data-i18n="text.decode">Çöz</span></label>
+          </div>
+          <textarea id="ttB64Input" data-i18n-placeholder="text.b64Placeholder" placeholder="Metin gir..." style="width:100%;min-height:140px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.85rem;resize:vertical"></textarea>
+          <div style="display:flex;gap:0.5rem;margin:0.8rem 0;flex-wrap:wrap">
+            <button id="ttB64RunBtn" class="btn btn-accent" data-i18n="text.runBtn">Çalıştır</button>
+            <button id="ttB64CopyBtn" class="btn btn-secondary" data-i18n="text.copyBtn">📋 Kopyala</button>
+          </div>
+          <div id="ttB64Error" class="error-msg hidden"></div>
+          <textarea id="ttB64Output" readonly style="width:100%;min-height:140px;background:var(--bg-input);color:var(--green);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.85rem;resize:vertical"></textarea>
+        </div>
+
+        <div id="ttCount" class="hidden">
+          <textarea id="ttCountInput" data-i18n-placeholder="text.countPlaceholder" placeholder="Metni buraya yapıştır..." style="width:100%;min-height:220px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:0.95rem;resize:vertical"></textarea>
+          <div id="ttCountStats" style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:0.8rem;font-size:0.9rem;color:var(--text-secondary)"></div>
+        </div>
+
+        <div id="ttDiff" class="hidden">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+            <textarea id="ttDiffA" data-i18n-placeholder="text.diffAPlaceholder" placeholder="İlk metin..." style="min-height:200px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.85rem;resize:vertical"></textarea>
+            <textarea id="ttDiffB" data-i18n-placeholder="text.diffBPlaceholder" placeholder="İkinci metin..." style="min-height:200px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.85rem;resize:vertical"></textarea>
+          </div>
+          <button id="ttDiffRunBtn" class="btn btn-accent" style="margin-top:0.8rem" data-i18n="text.diffBtn">🔍 Karşılaştır</button>
+          <div id="ttDiffOutput" style="margin-top:0.8rem;font-family:monospace;font-size:0.85rem;white-space:pre-wrap;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:1rem;max-height:320px;overflow:auto"></div>
         </div>
       </div>
     </section>

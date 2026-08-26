@@ -140,4 +140,5 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important;
   .convert-actions { flex-direction: column; }
   .trim-controls { gap: 1rem; }
   .trim-group { min-width: 0; }
+  #ttDiff > div { grid-template-columns: 1fr !important; }
 }

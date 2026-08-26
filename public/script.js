@@ -549,6 +549,23 @@ const pdfProgressText = document.getElementById('pdfProgressText');
 const pdfResult = document.getElementById('pdfResult');
 const pdfResultText = document.getElementById('pdfResultText');
 const pdfDownloadBtn = document.getElementById('pdfDownloadBtn');
+const pdfConvertBlock = document.getElementById('pdfConvertBlock');
+const pdfMergeBlock = document.getElementById('pdfMergeBlock');
+const pdfSplitBlock = document.getElementById('pdfSplitBlock');
+const pdfMergeAction = document.getElementById('pdfMergeAction');
+const pdfSplitAction = document.getElementById('pdfSplitAction');
+
+document.querySelectorAll('input[name="pdfOp"]').forEach(r => r.addEventListener('change', () => {
+  const op = document.querySelector('input[name="pdfOp"]:checked').value;
+  pdfConvertBlock.classList.toggle('hidden', op !== 'convert');
+  pdfMergeBlock.classList.toggle('hidden', op !== 'merge');
+  pdfSplitBlock.classList.toggle('hidden', op !== 'split');
+  pdfSection.classList.add('hidden');
+  pdfMergeAction.classList.toggle('hidden', op !== 'merge' || pdfMergeFiles.length < 2);
+  pdfSplitAction.classList.toggle('hidden', op !== 'split' || !pdfSplitFile);
+  pdfResult.classList.add('hidden');
+  hideError(pdfError);
+}));
 
 let pdfFile = null;
 
@@ -620,6 +637,125 @@ pdfConvertBtn.addEventListener('click', async () => {
   } catch (err) {
     pdfProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
     pdfConvertBtn.disabled = false;
+  }
+});
+
+// ---- PDF MERGE ----
+const pdfMergeUploadArea = document.getElementById('pdfMergeUploadArea');
+const pdfMergeFileInput = document.getElementById('pdfMergeFileInput');
+const pdfMergeSelectBtn = document.getElementById('pdfMergeSelectBtn');
+const pdfMergeFileList = document.getElementById('pdfMergeFileList');
+const pdfMergeBtn = document.getElementById('pdfMergeBtn');
+
+let pdfMergeFiles = [];
+
+function renderMergeList() {
+  pdfMergeFileList.innerHTML = pdfMergeFiles.map((f, i) =>
+    `<span style="display:inline-flex;align-items:center;gap:0.3rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.6rem;margin:0.2rem">📄 ${f.name}<button data-i="${i}" class="pdfMergeRemove" style="background:none;border:none;color:var(--red);cursor:pointer;font-weight:700">✖</button></span>`
+  ).join('');
+  pdfMergeAction.classList.toggle('hidden', pdfMergeFiles.length < 2);
+}
+function addMergeFiles(fileList) {
+  for (const f of fileList) if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) pdfMergeFiles.push(f);
+  renderMergeList();
+}
+pdfMergeSelectBtn.addEventListener('click', () => pdfMergeFileInput.click());
+pdfMergeFileInput.addEventListener('change', e => { addMergeFiles(e.target.files); pdfMergeFileInput.value = ''; });
+pdfMergeUploadArea.addEventListener('dragover', e => { e.preventDefault(); pdfMergeUploadArea.style.borderColor = 'var(--blue)'; });
+pdfMergeUploadArea.addEventListener('dragleave', () => { pdfMergeUploadArea.style.borderColor = ''; });
+pdfMergeUploadArea.addEventListener('drop', e => { e.preventDefault(); pdfMergeUploadArea.style.borderColor = ''; addMergeFiles(e.dataTransfer.files); });
+pdfMergeFileList.addEventListener('click', e => {
+  const btn = e.target.closest('.pdfMergeRemove');
+  if (btn) { pdfMergeFiles.splice(Number(btn.dataset.i), 1); renderMergeList(); }
+});
+
+pdfMergeBtn.addEventListener('click', async () => {
+  if (pdfMergeFiles.length < 2) return;
+  hideError(pdfError);
+  pdfMergeBtn.disabled = true;
+  pdfProgress.classList.remove('hidden'); pdfResult.classList.add('hidden');
+  pdfProgressFill.style.width = '10%'; pdfProgressText.textContent = t('pdf.merging');
+  try {
+    const form = new FormData();
+    for (const f of pdfMergeFiles) form.append('files', f);
+    const res = await fetchWithTimeout('/api/pdf-merge', { method: 'POST', body: form }, 60000);
+    const data = await res.json();
+    if (!res.ok) { pdfProgressText.textContent = t('common.errorPrefix') + data.error; pdfMergeBtn.disabled = false; return; }
+    pdfProgressFill.style.width = '80%'; pdfProgressText.textContent = t('common.preparing');
+    pdfResultText.textContent = t('pdf.mergeReady');
+    pdfResult.classList.remove('hidden');
+    pdfDownloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = '/api/download/' + data.file;
+      a.download = data.title + '.pdf';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    setTimeout(() => {
+      pdfProgressFill.style.width = '100%'; pdfProgressText.textContent = t('common.completed');
+      setTimeout(() => { pdfProgress.classList.add('hidden'); pdfProgressFill.style.width = '0%'; pdfMergeBtn.disabled = false; }, 3000);
+    }, 500);
+  } catch (err) {
+    pdfProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
+    pdfMergeBtn.disabled = false;
+  }
+});
+
+// ---- PDF SPLIT ----
+const pdfSplitUploadArea = document.getElementById('pdfSplitUploadArea');
+const pdfSplitFileInput = document.getElementById('pdfSplitFileInput');
+const pdfSplitSelectBtn = document.getElementById('pdfSplitSelectBtn');
+const pdfSplitFileInfo = document.getElementById('pdfSplitFileInfo');
+const pdfSplitFileName = document.getElementById('pdfSplitFileName');
+const pdfSplitClearBtn = document.getElementById('pdfSplitClearBtn');
+const pdfSplitBtn = document.getElementById('pdfSplitBtn');
+
+let pdfSplitFile = null;
+
+function pickSplitFile(f) {
+  if (!f) return;
+  pdfSplitFile = f;
+  pdfSplitFileName.textContent = '📄 ' + f.name + ' (' + fmtSize(f.size) + ')';
+  pdfSplitFileInfo.classList.remove('hidden');
+  pdfSplitAction.classList.remove('hidden');
+}
+pdfSplitSelectBtn.addEventListener('click', () => pdfSplitFileInput.click());
+pdfSplitFileInput.addEventListener('change', e => pickSplitFile(e.target.files[0]));
+pdfSplitUploadArea.addEventListener('dragover', e => { e.preventDefault(); pdfSplitUploadArea.style.borderColor = 'var(--blue)'; });
+pdfSplitUploadArea.addEventListener('dragleave', () => { pdfSplitUploadArea.style.borderColor = ''; });
+pdfSplitUploadArea.addEventListener('drop', e => { e.preventDefault(); pdfSplitUploadArea.style.borderColor = ''; pickSplitFile(e.dataTransfer.files[0]); });
+pdfSplitClearBtn.addEventListener('click', () => {
+  pdfSplitFile = null; pdfSplitFileInput.value = '';
+  pdfSplitFileInfo.classList.add('hidden'); pdfSplitAction.classList.add('hidden');
+});
+
+pdfSplitBtn.addEventListener('click', async () => {
+  if (!pdfSplitFile) return;
+  hideError(pdfError);
+  pdfSplitBtn.disabled = true;
+  pdfProgress.classList.remove('hidden'); pdfResult.classList.add('hidden');
+  pdfProgressFill.style.width = '10%'; pdfProgressText.textContent = t('pdf.splitting');
+  try {
+    const form = new FormData();
+    form.append('file', pdfSplitFile);
+    const res = await fetchWithTimeout('/api/pdf-split', { method: 'POST', body: form }, 60000);
+    const data = await res.json();
+    if (!res.ok) { pdfProgressText.textContent = t('common.errorPrefix') + data.error; pdfSplitBtn.disabled = false; return; }
+    pdfProgressFill.style.width = '80%'; pdfProgressText.textContent = t('common.preparing');
+    pdfResultText.textContent = t('pdf.splitReady', { pages: data.pages });
+    pdfResult.classList.remove('hidden');
+    pdfDownloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = '/api/download/' + data.file;
+      a.download = data.title + '_bolunmus.zip';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    setTimeout(() => {
+      pdfProgressFill.style.width = '100%'; pdfProgressText.textContent = t('common.completed');
+      setTimeout(() => { pdfProgress.classList.add('hidden'); pdfProgressFill.style.width = '0%'; pdfSplitBtn.disabled = false; }, 3000);
+    }, 500);
+  } catch (err) {
+    pdfProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
+    pdfSplitBtn.disabled = false;
   }
 });
 
@@ -969,3 +1105,189 @@ ssCreateBtn.addEventListener('click', async () => {
 });
 function ssCancel() { ssCreateBtn.disabled = false; ssAbort = null; }
 ssCancelBtn.addEventListener('click', () => { if (ssAbort) { ssAbort.abort(); ssProgressText.textContent = t('common.cancelling'); ssCancelBtn.disabled = true; } });
+
+// ---- SUBTITLES ----
+const subUrl = document.getElementById('subUrl');
+const subLoadBtn = document.getElementById('subLoadBtn');
+const subError = document.getElementById('subError');
+const subResult = document.getElementById('subResult');
+const subTitle = document.getElementById('subTitle');
+const subManualGroup = document.getElementById('subManualGroup');
+const subManualList = document.getElementById('subManualList');
+const subAutoGroup = document.getElementById('subAutoGroup');
+const subAutoList = document.getElementById('subAutoList');
+const subProgress = document.getElementById('subProgress');
+const subProgressFill = document.getElementById('subProgressFill');
+const subProgressText = document.getElementById('subProgressText');
+const subDone = document.getElementById('subDone');
+const subDoneText = document.getElementById('subDoneText');
+const subDownloadBtn = document.getElementById('subDownloadBtn');
+
+let subUrlValue = '';
+
+function langBtn(lang, auto) {
+  return `<button class="btn btn-small btn-outline subLangBtn" data-lang="${lang}" data-auto="${auto ? '1' : '0'}">${lang}</button>`;
+}
+
+subUrl.addEventListener('keydown', e => { if (e.key === 'Enter') loadSubtitleList(); });
+subLoadBtn.addEventListener('click', loadSubtitleList);
+
+async function loadSubtitleList() {
+  const url = subUrl.value.trim();
+  if (!url) { showError(subError, t('err.urlRequired')); return; }
+  hideError(subError);
+  subResult.classList.add('hidden'); subDone.classList.add('hidden');
+  subLoadBtn.disabled = true; subLoadBtn.textContent = t('common.gettingInfo');
+  try {
+    const res = await fetchWithTimeout('/api/subtitle-list', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(subError, data.error); subLoadBtn.disabled = false; subLoadBtn.textContent = t('subtitle.listBtn'); return; }
+    subUrlValue = url;
+    subTitle.textContent = data.title;
+    subManualGroup.classList.toggle('hidden', data.manual.length === 0);
+    subManualList.innerHTML = data.manual.map(l => langBtn(l, false)).join('');
+    subAutoGroup.classList.toggle('hidden', data.auto.length === 0);
+    subAutoList.innerHTML = data.auto.map(l => langBtn(l, true)).join('');
+    subResult.classList.remove('hidden');
+  } catch (err) {
+    showError(subError, err.name === 'AbortError' ? t('common.serverNotResponding') : t('common.errorPrefix') + err.message);
+  }
+  subLoadBtn.disabled = false; subLoadBtn.textContent = t('subtitle.listBtn');
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.subLangBtn');
+  if (!btn) return;
+  downloadSubtitle(btn.dataset.lang, btn.dataset.auto === '1');
+});
+
+async function downloadSubtitle(lang, auto) {
+  hideError(subError);
+  subProgress.classList.remove('hidden'); subDone.classList.add('hidden');
+  subProgressFill.style.width = '15%'; subProgressText.textContent = t('common.processing');
+  try {
+    const res = await fetchWithTimeout('/api/subtitle-download', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: subUrlValue, lang, auto })
+    }, 60000);
+    const data = await res.json();
+    if (!res.ok) { subProgressText.textContent = t('common.errorPrefix') + data.error; return; }
+    subProgressFill.style.width = '100%'; subProgressText.textContent = t('common.completed');
+    subDoneText.textContent = t('subtitle.ready', { lang });
+    subDownloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = '/api/download/' + data.file;
+      a.download = data.file;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    setTimeout(() => { subProgress.classList.add('hidden'); subProgressFill.style.width = '0%'; subDone.classList.remove('hidden'); }, 400);
+  } catch (err) {
+    subProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
+  }
+}
+
+// ---- TEXT TOOLS ----
+document.querySelectorAll('input[name="ttool"]').forEach(r => r.addEventListener('change', () => {
+  const tool = document.querySelector('input[name="ttool"]:checked').value;
+  document.getElementById('ttJson').classList.toggle('hidden', tool !== 'json');
+  document.getElementById('ttBase64').classList.toggle('hidden', tool !== 'base64');
+  document.getElementById('ttCount').classList.toggle('hidden', tool !== 'count');
+  document.getElementById('ttDiff').classList.toggle('hidden', tool !== 'diff');
+}));
+
+// JSON formatter
+const ttJsonInput = document.getElementById('ttJsonInput');
+const ttJsonOutput = document.getElementById('ttJsonOutput');
+const ttJsonError = document.getElementById('ttJsonError');
+document.getElementById('ttJsonFormatBtn').addEventListener('click', () => {
+  try { ttJsonOutput.value = JSON.stringify(JSON.parse(ttJsonInput.value), null, 2); hideError(ttJsonError); }
+  catch (err) { showError(ttJsonError, t('text.invalidJson') + ': ' + err.message); }
+});
+document.getElementById('ttJsonMinifyBtn').addEventListener('click', () => {
+  try { ttJsonOutput.value = JSON.stringify(JSON.parse(ttJsonInput.value)); hideError(ttJsonError); }
+  catch (err) { showError(ttJsonError, t('text.invalidJson') + ': ' + err.message); }
+});
+document.getElementById('ttJsonCopyBtn').addEventListener('click', () => copyToClipboard(ttJsonOutput.value));
+
+// Base64
+const ttB64Input = document.getElementById('ttB64Input');
+const ttB64Output = document.getElementById('ttB64Output');
+const ttB64Error = document.getElementById('ttB64Error');
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function b64decode(str) {
+  const bin = atob(str);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+document.getElementById('ttB64RunBtn').addEventListener('click', () => {
+  const mode = document.querySelector('input[name="b64mode"]:checked').value;
+  hideError(ttB64Error);
+  try { ttB64Output.value = mode === 'encode' ? b64encode(ttB64Input.value) : b64decode(ttB64Input.value); }
+  catch (err) { showError(ttB64Error, t('text.invalidBase64')); }
+});
+document.getElementById('ttB64CopyBtn').addEventListener('click', () => copyToClipboard(ttB64Output.value));
+
+function copyToClipboard(text) {
+  if (!text) return;
+  navigator.clipboard && navigator.clipboard.writeText(text).catch(() => {});
+}
+
+// Word / char counter
+const ttCountInput = document.getElementById('ttCountInput');
+const ttCountStats = document.getElementById('ttCountStats');
+function updateCountStats() {
+  const text = ttCountInput.value;
+  const chars = text.length;
+  const charsNoSpace = text.replace(/\s/g, '').length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const lines = text ? text.split('\n').length : 0;
+  ttCountStats.innerHTML =
+    `<span><b style="color:var(--text-primary)">${chars}</b> ${t('text.chars')}</span>` +
+    `<span><b style="color:var(--text-primary)">${charsNoSpace}</b> ${t('text.charsNoSpace')}</span>` +
+    `<span><b style="color:var(--text-primary)">${words}</b> ${t('text.words')}</span>` +
+    `<span><b style="color:var(--text-primary)">${lines}</b> ${t('text.lines')}</span>`;
+}
+ttCountInput.addEventListener('input', updateCountStats);
+updateCountStats();
+
+// Diff
+document.getElementById('ttDiffRunBtn').addEventListener('click', () => {
+  const a = document.getElementById('ttDiffA').value.split('\n');
+  const b = document.getElementById('ttDiffB').value.split('\n');
+  const out = document.getElementById('ttDiffOutput');
+  const n = a.length, m = b.length;
+  let ops;
+  if (n * m > 4000000) {
+    ops = [];
+    const max = Math.max(n, m);
+    for (let i = 0; i < max; i++) {
+      if (a[i] === b[i]) ops.push(['same', a[i] ?? '']);
+      else { if (i < n) ops.push(['del', a[i]]); if (i < m) ops.push(['add', b[i]]); }
+    }
+  } else {
+    const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    ops = []; let i = 0, j = 0;
+    while (i < n && j < m) {
+      if (a[i] === b[j]) { ops.push(['same', a[i]]); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { ops.push(['del', a[i]]); i++; }
+      else { ops.push(['add', b[j]]); j++; }
+    }
+    while (i < n) { ops.push(['del', a[i]]); i++; }
+    while (j < m) { ops.push(['add', b[j]]); j++; }
+  }
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  out.innerHTML = ops.map(([type, line]) => {
+    const color = type === 'add' ? 'var(--green)' : type === 'del' ? 'var(--red)' : 'var(--text-secondary)';
+    const prefix = type === 'add' ? '+ ' : type === 'del' ? '- ' : '  ';
+    return `<div style="color:${color}">${prefix}${esc(line)}</div>`;
+  }).join('') || `<div style="color:var(--text-secondary)">${t('text.noDiff')}</div>`;
+});

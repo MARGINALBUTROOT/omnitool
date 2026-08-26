@@ -550,6 +550,112 @@ app.post('/api/pdf-convert', heavyLimit, upload.single('file'), async (req, res)
   }
 });
 
+app.post('/api/pdf-merge', heavyLimit, upload.array('files', 30), async (req, res) => {
+  const files = req.files || [];
+  try {
+    if (files.length < 2) { files.forEach(f => safeUnlink(f.path)); return res.status(400).json({ error: 'En az 2 PDF dosyası gerekli' }); }
+    const merged = await PDFDocument.create();
+    for (const f of files) {
+      const bytes = fs.readFileSync(f.path);
+      const src = await PDFDocument.load(bytes);
+      const pages = await merged.copyPages(src, src.getPageIndices());
+      pages.forEach(p => merged.addPage(p));
+    }
+    const outName = `birlestirilmis_${Date.now()}.pdf`;
+    const outPath = path.join(prc, outName);
+    fs.writeFileSync(outPath, await merged.save());
+    files.forEach(f => safeUnlink(f.path));
+    res.json({ file: outName, title: 'birlestirilmis' });
+  } catch (err) {
+    files.forEach(f => safeUnlink(f.path));
+    res.status(500).json({ error: 'PDF birleştirme hatası: ' + err.message + ' (dosyaların geçerli PDF olduğundan emin olun)' });
+  }
+});
+
+app.post('/api/pdf-split', heavyLimit, upload.single('file'), async (req, res) => {
+  const inputPath = req.file && req.file.path;
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Dosya gerekli' });
+    const bytes = fs.readFileSync(inputPath);
+    const src = await PDFDocument.load(bytes);
+    const count = src.getPageCount();
+    if (count < 2) { safeUnlink(inputPath); return res.status(400).json({ error: 'Bölmek için en az 2 sayfalı bir PDF gerekli' }); }
+    const baseName = path.parse(req.file.originalname).name.replace(/[^\w\s]/gi, '').trim().substring(0, 40) || 'pdf';
+    const ts = Date.now();
+    const parts = [];
+    for (let i = 0; i < count; i++) {
+      const doc = await PDFDocument.create();
+      const [page] = await doc.copyPages(src, [i]);
+      doc.addPage(page);
+      const partName = `${baseName}_sayfa${i + 1}_${ts}.pdf`;
+      fs.writeFileSync(path.join(prc, partName), await doc.save());
+      parts.push(partName);
+    }
+    safeUnlink(inputPath);
+    const zipName = `${baseName}_bolunmus_${ts}.zip`;
+    const zipPath = path.join(prc, zipName);
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(output);
+    for (const p of parts) archive.file(path.join(prc, p), { name: p });
+    await archive.finalize();
+    output.on('close', () => { parts.forEach(p => safeUnlink(path.join(prc, p))); res.json({ file: zipName, title: baseName, pages: count }); });
+    output.on('error', () => res.status(500).json({ error: 'ZIP hatası' }));
+  } catch (err) {
+    safeUnlink(inputPath);
+    res.status(500).json({ error: 'PDF bölme hatası: ' + err.message + ' (dosyanın geçerli bir PDF olduğundan emin olun)' });
+  }
+});
+
+app.post('/api/subtitle-list', heavyLimit, async (req, res) => {
+  try {
+    let { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL girin' });
+    url = cleanUrl(url);
+    const info = await ytInfo(url, YT_TIMEOUT);
+    const subs = info.subtitles || {};
+    const autoSubs = info.automatic_captions || {};
+    const manual = Object.keys(subs);
+    const auto = Object.keys(autoSubs).filter(k => !manual.includes(k));
+    if (manual.length === 0 && auto.length === 0) return res.status(404).json({ error: 'Bu video için altyazı bulunamadı' });
+    res.json({ title: info.title || 'video', manual, auto });
+  } catch (err) {
+    res.status(500).json({ error: 'Altyazı listesi alınamadı: ' + err.message });
+  }
+});
+
+app.post('/api/subtitle-download', heavyLimit, async (req, res) => {
+  try {
+    let { url, lang, auto } = req.body;
+    if (!url || !lang) return res.status(400).json({ error: 'URL ve dil gerekli' });
+    url = cleanUrl(url);
+    const info = await ytInfo(url, YT_TIMEOUT).catch(() => null);
+    const baseName = sanitize(info && info.title);
+    const ts = Date.now();
+    const outBase = path.join(dls, `sub_${ts}`);
+    const ck = cookieFlags();
+    const args = [url, ...ck, '--skip-download', '--no-warnings', '--quiet', '--geo-bypass', '--ffmpeg-location', ffDir,
+      auto ? '--write-auto-sub' : '--write-sub', '--sub-langs', lang, '--sub-format', 'srt/best',
+      '-o', outBase];
+    await new Promise((resolve, reject) => {
+      const p = spawn(getYtDlpPath(), args);
+      let stderr = '';
+      p.stderr.on('data', d => stderr += d);
+      p.on('close', c => c === 0 ? resolve() : reject(new Error(stderr.slice(0, 300) || 'yt-dlp hata verdi')));
+      p.on('error', reject);
+    });
+    const found = fs.readdirSync(dls).find(f => f.startsWith(`sub_${ts}`));
+    if (!found) return res.status(404).json({ error: 'Bu dil için altyazı bulunamadı' });
+    const ext = path.extname(found) || '.srt';
+    const outName = `${baseName}_${lang}${ext}`;
+    const outPath = path.join(prc, outName);
+    fs.renameSync(path.join(dls, found), outPath);
+    res.json({ file: outName, title: baseName });
+  } catch (err) {
+    res.status(500).json({ error: 'Altyazı indirilemedi: ' + err.message });
+  }
+});
+
 app.post('/api/document-read', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Dosya gerekli' });
