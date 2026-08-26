@@ -20,22 +20,12 @@ function showError(el, msg) { el.textContent = msg; el.classList.remove('hidden'
 function hideError(el) { el.classList.add('hidden'); }
 
 // ---- TABS ----
-const MAIL_PASS = 'rootx123';
-let mailUnlocked = false;
-
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
-    const tab = document.getElementById('tab-' + btn.dataset.tab);
-    if (btn.dataset.tab === 'mail' && !mailUnlocked) {
-      const pwd = prompt('Mail araçlarına erişmek için şifre girin:');
-      if (pwd === MAIL_PASS) { mailUnlocked = true; tab.classList.add('active'); }
-      else { alert('Yanlış şifre'); document.querySelectorAll('.tab-btn')[0].click(); }
-    } else {
-      tab.classList.add('active');
-    }
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
   });
 });
 
@@ -95,15 +85,15 @@ convLoadBtn.addEventListener('click', loadConvInfo);
 
 async function loadConvInfo() {
   const url = convUrl.value.trim();
-  if (!url) { showError(convError, 'URL girin'); return; }
+  if (!url) { showError(convError, t('err.urlRequired')); return; }
   hideError(convError);
-  convLoadBtn.disabled = true; convLoadBtn.textContent = 'Bilgi alınıyor...';
+  convLoadBtn.disabled = true; convLoadBtn.textContent = t('common.gettingInfo');
   try {
     const res = await fetchWithTimeout('/api/info', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
     });
     const data = await res.json();
-    if (!res.ok) { showError(convError, data.error); convLoadBtn.disabled = false; convLoadBtn.textContent = 'Bilgi Al'; return; }
+    if (!res.ok) { showError(convError, data.error); convLoadBtn.disabled = false; convLoadBtn.textContent = t('common.getInfo'); return; }
     convUrlValue = data.webpage_url || url;
     convTitleText = data.title;
     convThumb.src = data.thumbnail;
@@ -113,13 +103,13 @@ async function loadConvInfo() {
     const ext = data.extractor;
     const icon = platformIcons[ext] || '🌐';
     const color = platformColors[ext] || '#888';
-    convPlatform.innerHTML = `<span style="color:${color};font-weight:700">${icon} ${ext || 'Diğer'}</span>`;
+    convPlatform.innerHTML = `<span style="color:${color};font-weight:700">${icon} ${ext || t('common.other')}</span>`;
     convPlatform.classList.remove('hidden');
     convInfo.classList.remove('hidden');
   } catch (err) {
-    showError(convError, err.name === 'AbortError' ? 'Sunucu yanıt vermiyor. server.js çalışıyor mu?' : 'Hata: ' + err.message);
+    showError(convError, err.name === 'AbortError' ? t('common.serverNotRespondingDetailed') : t('common.errorPrefix') + err.message);
   }
-  convLoadBtn.disabled = false; convLoadBtn.textContent = 'Bilgi Al';
+  convLoadBtn.disabled = false; convLoadBtn.textContent = t('common.getInfo');
 }
 
 convertBtn.addEventListener('click', async () => {
@@ -129,27 +119,27 @@ convertBtn.addEventListener('click', async () => {
   convertBtn.disabled = true; sendToTrimBtn.disabled = true;
   convProgress.classList.remove('hidden');
   convProgressFill.style.width = '10%';
-  convProgressText.textContent = 'İndiriliyor...';
+  convProgressText.textContent = t('common.downloading');
   try {
     const res = await fetchWithTimeout('/api/convert', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: convUrlValue, format: fmt, quality })
     });
     const data = await res.json();
-    if (!res.ok) { convProgressText.textContent = 'Hata: ' + data.error; convertBtn.disabled = false; sendToTrimBtn.disabled = false; return; }
+    if (!res.ok) { convProgressText.textContent = t('common.errorPrefix') + data.error; convertBtn.disabled = false; sendToTrimBtn.disabled = false; return; }
     convProgressFill.style.width = '80%';
-    convProgressText.textContent = 'İndirme hazırlanıyor...';
+    convProgressText.textContent = t('common.preparingDownload');
     setTimeout(() => {
       const a = document.createElement('a');
       a.href = '/api/download/' + data.file;
       a.download = data.title + '.' + fmt;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       convProgressFill.style.width = '100%';
-      convProgressText.textContent = '✅ Tamamlandı!';
+      convProgressText.textContent = t('common.completed');
       setTimeout(() => { convProgress.classList.add('hidden'); convProgressFill.style.width = '0%'; convertBtn.disabled = false; sendToTrimBtn.disabled = false; }, 3000);
     }, 500);
   } catch (err) {
-    convProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
+    convProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
     convertBtn.disabled = false; sendToTrimBtn.disabled = false;
   }
 });
@@ -245,7 +235,7 @@ trimDownloadBtn.addEventListener('click', async () => {
   trimDownloadBtn.disabled = true;
   trimProgress.classList.remove('hidden');
   trimProgressFill.style.width = '10%';
-  trimProgressText.textContent = 'İşleniyor...';
+  trimProgressText.textContent = t('common.processing');
   try {
     let res;
     if (trimFile) {
@@ -260,24 +250,24 @@ trimDownloadBtn.addEventListener('click', async () => {
         body: JSON.stringify({ url: trimUrl, startTime: start, endTime: end })
       });
     } else {
-      showError(trimError, 'Önce bir video yükleyin veya Dönüştürücü\'den gönderin');
+      showError(trimError, t('err.uploadOrSendFromConverter'));
       trimDownloadBtn.disabled = false; return;
     }
     const data = await res.json();
-    if (!res.ok) { trimProgressText.textContent = 'Hata: ' + data.error; trimDownloadBtn.disabled = false; return; }
+    if (!res.ok) { trimProgressText.textContent = t('common.errorPrefix') + data.error; trimDownloadBtn.disabled = false; return; }
     trimProgressFill.style.width = '70%';
-    trimProgressText.textContent = 'Kesiliyor...';
+    trimProgressText.textContent = t('trim.trimming');
     setTimeout(() => {
       const a = document.createElement('a');
       a.href = '/api/download/' + data.file;
       a.download = data.title + '_kesilmis.mp4';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       trimProgressFill.style.width = '100%';
-      trimProgressText.textContent = '✅ İndiriliyor!';
+      trimProgressText.textContent = t('trim.downloadingResult');
       setTimeout(() => { trimProgress.classList.add('hidden'); trimProgressFill.style.width = '0%'; trimDownloadBtn.disabled = false; }, 3000);
     }, 500);
   } catch (err) {
-    trimProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Sunucu yanıt vermedi' : err.message);
+    trimProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.serverNotResponding') : err.message);
     trimDownloadBtn.disabled = false;
   }
 });
@@ -286,10 +276,10 @@ async function loadTrimVideo(url, title) {
   trimUrl = url; trimTitle = title;
   trimFile = null; fileInput.value = '';
   uploadInfo.classList.remove('hidden');
-  fileNameDisplay.textContent = '🎬 ' + title + ' (önce dönüştürüp dosyayı yükleyin)';
+  fileNameDisplay.textContent = t('trim.fromConverter', { title });
   trimSection.classList.remove('hidden');
   trimPlayer.src = '';
-  document.querySelector('.upload-area p').textContent = 'Dönüştürücü\'den MP4 indirin, sonra buraya yükleyin';
+  uploadArea.querySelector('p').textContent = t('trim.uploadFromConverter');
   hideError(trimError);
   trimDownloadBtn.disabled = false;
   try {
@@ -336,7 +326,7 @@ compFileInput.addEventListener('change', e => {
     compFileName.textContent = '📁 ' + compFile.name + ' (' + fmtSize(compFile.size) + ')';
     compFileInfo.classList.remove('hidden');
     compSection.classList.remove('hidden');
-    compSizeInfo.textContent = 'Orijinal: ' + fmtSize(compFile.size);
+    compSizeInfo.textContent = t('compress.original', { size: fmtSize(compFile.size) });
   }
 });
 compUploadArea.addEventListener('dragover', e => { e.preventDefault(); compUploadArea.style.borderColor = 'var(--blue)'; });
@@ -349,7 +339,7 @@ compUploadArea.addEventListener('drop', e => {
     compFileName.textContent = '📁 ' + compFile.name + ' (' + fmtSize(compFile.size) + ')';
     compFileInfo.classList.remove('hidden');
     compSection.classList.remove('hidden');
-    compSizeInfo.textContent = 'Orijinal: ' + fmtSize(compFile.size);
+    compSizeInfo.textContent = t('compress.original', { size: fmtSize(compFile.size) });
   }
 });
 compClearBtn.addEventListener('click', () => {
@@ -358,31 +348,31 @@ compClearBtn.addEventListener('click', () => {
   compFileInfo.classList.add('hidden');
   compSection.classList.add('hidden');
   compResult.classList.add('hidden');
-  compSizeInfo.textContent = 'Henüz dosya seçilmedi';
+  compSizeInfo.textContent = t('compress.noFileYet');
 });
 
 compLoadBtn.addEventListener('click', async () => {
   const url = compUrl.value.trim();
-  if (!url) { showError(compError, 'URL girin'); return; }
+  if (!url) { showError(compError, t('err.urlRequired')); return; }
   hideError(compError);
-  compLoadBtn.disabled = true; compLoadBtn.textContent = 'Bilgi alınıyor...';
+  compLoadBtn.disabled = true; compLoadBtn.textContent = t('common.gettingInfo');
   try {
     const res = await fetchWithTimeout('/api/info', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
     });
     const data = await res.json();
-    if (!res.ok) { showError(compError, data.error); compLoadBtn.disabled = false; compLoadBtn.textContent = 'Bilgi Al'; return; }
+    if (!res.ok) { showError(compError, data.error); compLoadBtn.disabled = false; compLoadBtn.textContent = t('common.getInfo'); return; }
     compUrlValue = data.webpage_url || url;
     compTitleText = data.title;
     compFileName.textContent = '🎬 ' + data.title;
     compFileInfo.classList.remove('hidden');
     compSection.classList.remove('hidden');
-    compSizeInfo.textContent = 'Dosya boyutu indirme sonrası belli olacak';
+    compSizeInfo.textContent = t('compress.sizeAfterDownload');
     compFile = null;
   } catch (err) {
-    showError(compError, err.name === 'AbortError' ? 'Sunucu yanıt vermiyor' : 'Hata: ' + err.message);
+    showError(compError, err.name === 'AbortError' ? t('common.serverNotResponding') : t('common.errorPrefix') + err.message);
   }
-  compLoadBtn.disabled = false; compLoadBtn.textContent = 'Bilgi Al';
+  compLoadBtn.disabled = false; compLoadBtn.textContent = t('common.getInfo');
 });
 
 function fmtSize(bytes) {
@@ -393,14 +383,14 @@ function fmtSize(bytes) {
 }
 
 compressBtn.addEventListener('click', async () => {
-  if (!compUrlValue && !compFile) { showError(compError, 'Önce bir URL gir veya dosya seç'); return; }
+  if (!compUrlValue && !compFile) { showError(compError, t('err.selectUrlOrFile')); return; }
   hideError(compError);
   const level = document.querySelector('input[name="clvl"]:checked').value;
   compressBtn.disabled = true;
   compProgress.classList.remove('hidden');
   compResult.classList.add('hidden');
   compProgressFill.style.width = '5%';
-  compProgressText.textContent = 'Sıkıştırılıyor...';
+  compProgressText.textContent = t('compress.compressing');
   try {
     let res;
     if (compFile) {
@@ -415,13 +405,13 @@ compressBtn.addEventListener('click', async () => {
       });
     }
     const data = await res.json();
-    if (!res.ok) { compProgressText.textContent = 'Hata: ' + data.error; compressBtn.disabled = false; return; }
+    if (!res.ok) { compProgressText.textContent = t('common.errorPrefix') + data.error; compressBtn.disabled = false; return; }
     compProgressFill.style.width = '90%';
-    compProgressText.textContent = 'Hazırlanıyor...';
-    compResultText.textContent = '✨ ' + fmtSize(data.original) + ' → ' + fmtSize(data.compressed) + ' (%' + data.savings + ' küçüldü)';
-    if (data.savings < 1) compResultText.textContent = '⚠️ Dosya zaten küçük, çok değişmedi (' + fmtSize(data.compressed) + ')';
+    compProgressText.textContent = t('common.preparing');
+    compResultText.textContent = t('compress.resultShrunk', { from: fmtSize(data.original), to: fmtSize(data.compressed), pct: data.savings });
+    if (data.savings < 1) compResultText.textContent = t('compress.resultTooSmall', { size: fmtSize(data.compressed) });
     compResult.classList.remove('hidden');
-    compSizeInfo.textContent = 'Sıkıştırma: ' + data.level + ' | Orijinal: ' + fmtSize(data.original) + ' → ' + fmtSize(data.compressed);
+    compSizeInfo.textContent = t('compress.summary', { level: data.level, from: fmtSize(data.original), to: fmtSize(data.compressed) });
     compDownloadBtn.onclick = () => {
       const a = document.createElement('a');
       a.href = '/api/download/' + data.file;
@@ -430,11 +420,11 @@ compressBtn.addEventListener('click', async () => {
     };
     setTimeout(() => {
       compProgressFill.style.width = '100%';
-      compProgressText.textContent = '✅ Tamamlandı!';
+      compProgressText.textContent = t('common.completed');
       setTimeout(() => { compProgress.classList.add('hidden'); compProgressFill.style.width = '0%'; compressBtn.disabled = false; }, 3000);
     }, 500);
   } catch (err) {
-    compProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
+    compProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
     compressBtn.disabled = false;
   }
 });
@@ -473,7 +463,7 @@ filesFileInput.addEventListener('change', e => {
     filesFileName.textContent = '📁 ' + filesFile.name + ' (' + fmtSize(filesFile.size) + ')';
     filesFileInfo.classList.remove('hidden');
     filesSection.classList.remove('hidden');
-    filesSizeInfo.textContent = 'Dosya: ' + fmtSize(filesFile.size);
+    filesSizeInfo.textContent = t('files.fileSizeLabel', { size: fmtSize(filesFile.size) });
   }
 });
 filesUploadArea.addEventListener('dragover', e => { e.preventDefault(); filesUploadArea.style.borderColor = 'var(--blue)'; });
@@ -485,7 +475,7 @@ filesUploadArea.addEventListener('drop', e => {
     filesFileName.textContent = '📁 ' + filesFile.name + ' (' + fmtSize(filesFile.size) + ')';
     filesFileInfo.classList.remove('hidden');
     filesSection.classList.remove('hidden');
-    filesSizeInfo.textContent = 'Dosya: ' + fmtSize(filesFile.size);
+    filesSizeInfo.textContent = t('files.fileSizeLabel', { size: fmtSize(filesFile.size) });
   }
 });
 filesClearBtn.addEventListener('click', () => {
@@ -498,7 +488,7 @@ filesClearBtn.addEventListener('click', () => {
 });
 
 filesProcessBtn.addEventListener('click', async () => {
-  if (!filesFile) { showError(filesError, 'Önce bir dosya seç'); return; }
+  if (!filesFile) { showError(filesError, t('err.selectFileFirst')); return; }
   hideError(filesError);
   const op = document.querySelector('input[name="fop"]:checked').value;
   const format = filesTargetFormat.value;
@@ -506,7 +496,7 @@ filesProcessBtn.addEventListener('click', async () => {
   filesProgress.classList.remove('hidden');
   filesResult.classList.add('hidden');
   filesProgressFill.style.width = '5%';
-  filesProgressText.textContent = op === 'zip' ? 'ZIP sıkıştırılıyor...' : op === 'unzip' ? 'ZIP açılıyor...' : 'Dönüştürülüyor...';
+  filesProgressText.textContent = op === 'zip' ? t('files.zipping') : op === 'unzip' ? t('files.unzipping') : t('files.converting');
   try {
     const form = new FormData();
     form.append('file', filesFile);
@@ -514,16 +504,16 @@ filesProcessBtn.addEventListener('click', async () => {
     form.append('format', format);
     const res = await fetchWithTimeout('/api/convert-file', { method: 'POST', body: form });
     const data = await res.json();
-    if (!res.ok) { filesProgressText.textContent = 'Hata: ' + data.error; filesProcessBtn.disabled = false; return; }
+    if (!res.ok) { filesProgressText.textContent = t('common.errorPrefix') + data.error; filesProcessBtn.disabled = false; return; }
     filesProgressFill.style.width = '90%';
-    filesProgressText.textContent = 'Hazırlanıyor...';
+    filesProgressText.textContent = t('common.preparing');
     let msg;
-    if (op === 'zip') msg = '🗜 ZIP yapıldı! ' + fmtSize(data.original) + ' → ' + fmtSize(data.compressed) + ' (%' + data.savings + ' küçüldü)';
-    else if (op === 'unzip') msg = '📂 ZIP açıldı!';
-    else msg = '✅ ' + format.toUpperCase() + ' dönüştürüldü!';
+    if (op === 'zip') msg = t('files.resultZip', { from: fmtSize(data.original), to: fmtSize(data.compressed), pct: data.savings });
+    else if (op === 'unzip') msg = t('files.resultUnzip');
+    else msg = t('files.resultConvert', { format: format.toUpperCase() });
     filesResultText.textContent = msg;
     filesResult.classList.remove('hidden');
-    filesSizeInfo.textContent = data.original ? 'Orijinal: ' + fmtSize(data.original) + ' → ' + fmtSize(data.compressed) : '';
+    filesSizeInfo.textContent = data.original ? t('files.originalToCompressed', { from: fmtSize(data.original), to: fmtSize(data.compressed) }) : '';
     const ext = op === 'unzip' ? data.file.split('.').pop() : format || 'zip';
     filesDownloadBtn.onclick = () => {
       const a = document.createElement('a');
@@ -533,11 +523,11 @@ filesProcessBtn.addEventListener('click', async () => {
     };
     setTimeout(() => {
       filesProgressFill.style.width = '100%';
-      filesProgressText.textContent = '✅ Tamamlandı!';
+      filesProgressText.textContent = t('common.completed');
       setTimeout(() => { filesProgress.classList.add('hidden'); filesProgressFill.style.width = '0%'; filesProcessBtn.disabled = false; }, 3000);
     }, 500);
   } catch (err) {
-    filesProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
+    filesProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
     filesProcessBtn.disabled = false;
   }
 });
@@ -577,7 +567,7 @@ pdfFileInput.addEventListener('change', e => {
         pdfPreview.textContent = reader.result.slice(0, 3000) + (reader.result.length > 3000 ? '\n...' : '');
         pdfPreview.classList.remove('hidden');
       };
-      if (ext === 'docx') { pdfPreview.textContent = '(DOCX dosyası - içerik sunucuda okunacak)'; pdfPreview.classList.remove('hidden'); }
+      if (ext === 'docx') { pdfPreview.textContent = t('pdf.docxPreviewNote'); pdfPreview.classList.remove('hidden'); }
       else reader.readAsText(pdfFile);
     } else { pdfPreview.classList.add('hidden'); }
     pdfError.classList.add('hidden');
@@ -603,19 +593,19 @@ pdfClearBtn.addEventListener('click', () => {
 });
 
 pdfConvertBtn.addEventListener('click', async () => {
-  if (!pdfFile) { showError(pdfError, 'Önce bir dosya seç'); return; }
+  if (!pdfFile) { showError(pdfError, t('err.selectFileFirst')); return; }
   hideError(pdfError);
   pdfConvertBtn.disabled = true;
   pdfProgress.classList.remove('hidden'); pdfResult.classList.add('hidden');
-  pdfProgressFill.style.width = '10%'; pdfProgressText.textContent = 'PDF oluşturuluyor...';
+  pdfProgressFill.style.width = '10%'; pdfProgressText.textContent = t('pdf.creating');
   try {
     const form = new FormData();
     form.append('file', pdfFile);
     const res = await fetchWithTimeout('/api/pdf-convert', { method: 'POST', body: form });
     const data = await res.json();
-    if (!res.ok) { pdfProgressText.textContent = 'Hata: ' + data.error; pdfConvertBtn.disabled = false; return; }
-    pdfProgressFill.style.width = '80%'; pdfProgressText.textContent = 'Hazırlanıyor...';
-    pdfResultText.textContent = '✅ PDF hazır!';
+    if (!res.ok) { pdfProgressText.textContent = t('common.errorPrefix') + data.error; pdfConvertBtn.disabled = false; return; }
+    pdfProgressFill.style.width = '80%'; pdfProgressText.textContent = t('common.preparing');
+    pdfResultText.textContent = t('pdf.ready');
     pdfResult.classList.remove('hidden');
     pdfDownloadBtn.onclick = () => {
       const a = document.createElement('a');
@@ -624,11 +614,11 @@ pdfConvertBtn.addEventListener('click', async () => {
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
     setTimeout(() => {
-      pdfProgressFill.style.width = '100%'; pdfProgressText.textContent = '✅ Tamamlandı!';
+      pdfProgressFill.style.width = '100%'; pdfProgressText.textContent = t('common.completed');
       setTimeout(() => { pdfProgress.classList.add('hidden'); pdfProgressFill.style.width = '0%'; pdfConvertBtn.disabled = false; }, 3000);
     }, 500);
   } catch (err) {
-    pdfProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
+    pdfProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
     pdfConvertBtn.disabled = false;
   }
 });
@@ -664,14 +654,14 @@ editFileInput.addEventListener('change', e => {
     editFileInfo.classList.remove('hidden');
     editSection.classList.remove('hidden');
     editResult.classList.add('hidden');
-    editTextarea.value = 'Yükleniyor...';
+    editTextarea.value = t('common.loadingEllipsis');
     const form = new FormData();
     form.append('file', file);
     fetchWithTimeout('/api/document-read', { method: 'POST', body: form }).then(r => r.json()).then(d => {
-      if (d.error) { editTextarea.value = 'Hata: ' + d.error; return; }
+      if (d.error) { editTextarea.value = t('common.errorPrefix') + d.error; return; }
       editTextarea.value = d.content;
       editTitle = d.title;
-    }).catch(() => { editTextarea.value = 'Okuma hatası'; });
+    }).catch(() => { editTextarea.value = t('common.readError'); });
   }
 });
 editUploadArea.addEventListener('dragover', e => { e.preventDefault(); editUploadArea.style.borderColor = 'var(--blue)'; });
@@ -687,13 +677,13 @@ editUploadArea.addEventListener('drop', e => {
     editFileInfo.classList.remove('hidden');
     editSection.classList.remove('hidden');
     editResult.classList.add('hidden');
-    editTextarea.value = 'Yükleniyor...';
+    editTextarea.value = t('common.loadingEllipsis');
     const form = new FormData();
     form.append('file', file);
     fetchWithTimeout('/api/document-read', { method: 'POST', body: form }).then(r => r.json()).then(d => {
-      if (d.error) { editTextarea.value = 'Hata: ' + d.error; return; }
+      if (d.error) { editTextarea.value = t('common.errorPrefix') + d.error; return; }
       editTextarea.value = d.content;
-    }).catch(() => { editTextarea.value = 'Okuma hatası'; });
+    }).catch(() => { editTextarea.value = t('common.readError'); });
   }
 });
 editClearBtn.addEventListener('click', () => {
@@ -704,21 +694,21 @@ editClearBtn.addEventListener('click', () => {
 
 editSaveBtn.addEventListener('click', async () => {
   const content = editTextarea.value.trim();
-  if (!content) { showError(editError, 'İçerik boş'); return; }
+  if (!content) { showError(editError, t('err.contentEmpty')); return; }
   hideError(editError);
   const fmt = document.querySelector('input[name="editFmt"]:checked').value;
   editSaveBtn.disabled = true;
   editProgress.classList.remove('hidden'); editResult.classList.add('hidden');
-  editProgressFill.style.width = '10%'; editProgressText.textContent = 'Kaydediliyor...';
+  editProgressFill.style.width = '10%'; editProgressText.textContent = t('editor.saving');
   try {
     const res = await fetchWithTimeout('/api/document-save', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content, title: editTitle, format: fmt })
     });
     const data = await res.json();
-    if (!res.ok) { editProgressText.textContent = 'Hata: ' + data.error; editSaveBtn.disabled = false; return; }
-    editProgressFill.style.width = '80%'; editProgressText.textContent = 'Hazırlanıyor...';
-    editResultText.textContent = '✅ ' + fmt.toUpperCase() + ' kaydedildi!';
+    if (!res.ok) { editProgressText.textContent = t('common.errorPrefix') + data.error; editSaveBtn.disabled = false; return; }
+    editProgressFill.style.width = '80%'; editProgressText.textContent = t('common.preparing');
+    editResultText.textContent = t('editor.saved', { fmt: fmt.toUpperCase() });
     editResult.classList.remove('hidden');
     editDownloadBtn.onclick = () => {
       const a = document.createElement('a');
@@ -727,11 +717,11 @@ editSaveBtn.addEventListener('click', async () => {
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
     setTimeout(() => {
-      editProgressFill.style.width = '100%'; editProgressText.textContent = '✅ Tamamlandı!';
+      editProgressFill.style.width = '100%'; editProgressText.textContent = t('common.completed');
       setTimeout(() => { editProgress.classList.add('hidden'); editProgressFill.style.width = '0%'; editSaveBtn.disabled = false; }, 3000);
     }, 500);
   } catch (err) {
-    editProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
+    editProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
     editSaveBtn.disabled = false;
   }
 });
@@ -778,15 +768,15 @@ streamLoadBtn.addEventListener('click', loadStreamInfo);
 
 async function loadStreamInfo() {
   const url = streamUrl.value.trim();
-  if (!url) { showError(streamError, 'Twitch VOD veya Kick VOD URL girin'); return; }
+  if (!url) { showError(streamError, t('err.needStreamUrl')); return; }
   hideError(streamError);
-  streamLoadBtn.disabled = true; streamLoadBtn.textContent = 'Bilgi alınıyor...';
+  streamLoadBtn.disabled = true; streamLoadBtn.textContent = t('common.gettingInfo');
   try {
     const res = await fetchWithTimeout('/api/info', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
     });
     const data = await res.json();
-    if (!res.ok) { showError(streamError, data.error); streamLoadBtn.disabled = false; streamLoadBtn.textContent = 'Bilgi Al'; return; }
+    if (!res.ok) { showError(streamError, data.error); streamLoadBtn.disabled = false; streamLoadBtn.textContent = t('common.getInfo'); return; }
     streamUrlValue = data.webpage_url || url;
     streamTitleText = data.title;
     streamThumb.src = data.thumbnail;
@@ -796,16 +786,16 @@ async function loadStreamInfo() {
     const ext = data.extractor;
     const icon = platformIcons[ext] || '🌐';
     const color = platformColors[ext] || '#888';
-    streamPlatform.innerHTML = `<span style="color:${color};font-weight:700">${icon} ${ext || 'Diğer'}</span>`;
+    streamPlatform.innerHTML = `<span style="color:${color};font-weight:700">${icon} ${ext || t('common.other')}</span>`;
     streamPlatform.classList.remove('hidden');
     streamInfo.classList.remove('hidden');
     streamResult.classList.add('hidden');
     streamEndMin.value = Math.floor(data.duration / 60);
     streamEndSec.value = Math.floor(data.duration % 60);
   } catch (err) {
-    showError(streamError, err.name === 'AbortError' ? 'Sunucu yanıt vermiyor' : 'Hata: ' + err.message);
+    showError(streamError, err.name === 'AbortError' ? t('common.serverNotResponding') : t('common.errorPrefix') + err.message);
   }
-  streamLoadBtn.disabled = false; streamLoadBtn.textContent = 'Bilgi Al';
+  streamLoadBtn.disabled = false; streamLoadBtn.textContent = t('common.getInfo');
 }
 
 streamSetStartBtn.addEventListener('click', () => {
@@ -829,7 +819,7 @@ streamDownloadBtn.addEventListener('click', async () => {
   streamProgress.classList.remove('hidden');
   streamResult.classList.add('hidden');
   streamProgressFill.style.width = '10%';
-  streamProgressText.textContent = isTrim ? 'Kesiliyor...' : 'İndiriliyor...';
+  streamProgressText.textContent = isTrim ? t('trim.trimming') : t('common.downloading');
   try {
     let res;
     if (isTrim) {
@@ -848,10 +838,10 @@ streamDownloadBtn.addEventListener('click', async () => {
       });
     }
     const data = await res.json();
-    if (!res.ok) { streamProgressText.textContent = 'Hata: ' + data.error; streamDownloadBtn.disabled = false; return; }
+    if (!res.ok) { streamProgressText.textContent = t('common.errorPrefix') + data.error; streamDownloadBtn.disabled = false; return; }
     streamProgressFill.style.width = '90%';
-    streamProgressText.textContent = 'Hazırlanıyor...';
-    streamResultText.textContent = '✅ ' + (isTrim ? 'Kesildi' : 'İndirildi') + '!';
+    streamProgressText.textContent = t('common.preparing');
+    streamResultText.textContent = t(isTrim ? 'stream.trimmed' : 'stream.downloaded');
     streamResult.classList.remove('hidden');
     streamResultDownloadBtn.onclick = () => {
       const a = document.createElement('a');
@@ -861,104 +851,12 @@ streamDownloadBtn.addEventListener('click', async () => {
     };
     setTimeout(() => {
       streamProgressFill.style.width = '100%';
-      streamProgressText.textContent = '✅ Tamamlandı!';
+      streamProgressText.textContent = t('common.completed');
       setTimeout(() => { streamProgress.classList.add('hidden'); streamProgressFill.style.width = '0%'; streamDownloadBtn.disabled = false; }, 3000);
     }, 500);
   } catch (err) {
-    streamProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı' : err.message);
+    streamProgressText.textContent = t('common.errorPrefix') + (err.name === 'AbortError' ? t('common.timeout') : err.message);
     streamDownloadBtn.disabled = false;
-  }
-});
-
-// ---- MAIL TOOLS ----
-const mailHost = document.getElementById('mailHost');
-const mailPort = document.getElementById('mailPort');
-const mailUser = document.getElementById('mailUser');
-const mailPass = document.getElementById('mailPass');
-const mailName = document.getElementById('mailName');
-const mailSaveSmtp = document.getElementById('mailSaveSmtp');
-const mailSmtpStatus = document.getElementById('mailSmtpStatus');
-const mailTo = document.getElementById('mailTo');
-const mailSubject = document.getElementById('mailSubject');
-const mailBody = document.getElementById('mailBody');
-const mailAttachment = document.getElementById('mailAttachment');
-const mailSendBtn = document.getElementById('mailSendBtn');
-const mailError = document.getElementById('mailError');
-const mailProgress = document.getElementById('mailProgress');
-const mailProgressFill = document.getElementById('mailProgressFill');
-const mailProgressText = document.getElementById('mailProgressText');
-const mailResult = document.getElementById('mailResult');
-
-function loadSmtpSettings() {
-  try {
-    const s = JSON.parse(localStorage.getItem('omnitool_smtp') || '{}');
-    if (s.host) mailHost.value = s.host;
-    if (s.port) mailPort.value = s.port;
-    if (s.user) mailUser.value = s.user;
-    if (s.pass) mailPass.value = s.pass;
-    if (s.name) mailName.value = s.name;
-  } catch {}
-}
-loadSmtpSettings();
-
-mailSaveSmtp.addEventListener('click', () => {
-  const s = { host: mailHost.value, port: mailPort.value, user: mailUser.value, pass: mailPass.value, name: mailName.value };
-  localStorage.setItem('omnitool_smtp', JSON.stringify(s));
-  mailSmtpStatus.textContent = '✅ Kaydedildi';
-  setTimeout(() => { mailSmtpStatus.textContent = ''; }, 3000);
-});
-
-mailSendBtn.addEventListener('click', async () => {
-  hideError(mailError);
-  const host = mailHost.value.trim();
-  const port = mailPort.value.trim();
-  const user = mailUser.value.trim();
-  const pass = mailPass.value.trim();
-  const fromName = mailName.value.trim();
-  const to = mailTo.value.trim();
-  const subject = mailSubject.value.trim();
-  const body = mailBody.value.trim();
-
-  if (!host || !user || !pass) { showError(mailError, 'SMTP ayarlarını doldur (Host, E-posta, Şifre)'); return; }
-  if (!to) { showError(mailError, 'En az bir alıcı girin'); return; }
-  if (!subject || !body) { showError(mailError, 'Konu ve mesaj gerekli'); return; }
-
-  mailSendBtn.disabled = true;
-  mailProgress.classList.remove('hidden');
-  mailResult.classList.add('hidden');
-  mailProgressFill.style.width = '10%';
-  mailProgressText.textContent = 'Gönderiliyor...';
-  try {
-    const form = new FormData();
-    form.append('host', host);
-    form.append('port', port || '587');
-    form.append('user', user);
-    form.append('pass', pass);
-    form.append('fromName', fromName);
-    form.append('to', to);
-    form.append('subject', subject);
-    form.append('body', body);
-    if (mailAttachment.files.length > 0) form.append('attachment', mailAttachment.files[0]);
-
-    const res = await fetchWithTimeout('/api/send-mail', { method: 'POST', body: form }, 60000);
-    const data = await res.json();
-    if (!res.ok) { mailProgressText.textContent = 'Hata: ' + data.error; mailSendBtn.disabled = false; return; }
-    mailProgressFill.style.width = '100%';
-    mailProgressText.textContent = '✅ ' + data.sent + ' gönderildi, ' + data.failed + ' hata';
-    let html = '<div style="padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">';
-    html += '<p style="color:var(--green);font-weight:600">📤 ' + data.sent + '/' + (data.sent + data.failed) + ' başarılı</p>';
-    if (data.results && data.results.length > 0) {
-      html += '<div style="margin-top:0.5rem;font-size:0.8rem;max-height:200px;overflow-y:auto">';
-      for (const r of data.results) html += '<p style="color:' + (r.status === 'ok' ? 'var(--green)' : 'var(--red)') + '">' + r.email + ' → ' + r.status + (r.error ? ': ' + r.error : '') + '</p>';
-      html += '</div>';
-    }
-    html += '</div>';
-    mailResult.innerHTML = html;
-    mailResult.classList.remove('hidden');
-    setTimeout(() => { mailProgress.classList.add('hidden'); mailProgressFill.style.width = '0%'; mailSendBtn.disabled = false; }, 3000);
-  } catch (err) {
-    mailProgressText.textContent = 'Hata: ' + (err.name === 'AbortError' ? 'Zaman aşımı (60sn)' : err.message);
-    mailSendBtn.disabled = false;
   }
 });
 
@@ -995,8 +893,8 @@ function getSlotFiles() {
 function updateSlotLabels() {
   const slots = document.querySelectorAll('#ssImageSlots .upload-area');
   slots.forEach((el, i) => {
-    const lbl = el.querySelector('span:first-child');
-    if (lbl) lbl.textContent = (i + 1) + '. Fotoğraf';
+    const lbl = el.querySelector('.ssSlotLabel');
+    if (lbl) { lbl.dataset.n = i + 1; lbl.textContent = t('slideshow.photoN', { n: i + 1 }); }
     const rm = el.querySelector('.ssRemoveBtn');
     if (rm) rm.style.display = slots.length > 2 ? '' : 'none';
   });
@@ -1020,10 +918,10 @@ ssAddSlotBtn.addEventListener('click', () => {
   const div = document.createElement('div');
   div.className = 'upload-area';
   div.style.cssText = 'padding:0.8rem;display:flex;align-items:center;gap:0.5rem';
-  div.innerHTML = `<span style="font-weight:600;font-size:0.85rem">${idx+1}. Fotoğraf</span>
+  div.innerHTML = `<span class="ssSlotLabel" data-n="${idx+1}" style="font-weight:600;font-size:0.85rem;min-width:90px">${t('slideshow.photoN', { n: idx+1 })}</span>
 <input type="file" accept="image/*" hidden>
-<button class="btn btn-small btn-outline ssSlotBtn">📷 Seç</button>
-<span class="ssSlotName" style="font-size:0.85rem;color:var(--text-secondary)"></span>
+<button class="btn btn-small btn-outline ssSlotBtn">${t('slideshow.select')}</button>
+<span class="ssSlotName" style="font-size:0.85rem;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
 <button class="btn btn-small btn-outline ssRemoveBtn" style="color:var(--red);margin-left:auto">✖</button>`;
   ssImageSlots.appendChild(div);
   updateSlotLabels();
@@ -1037,12 +935,12 @@ ssAudio.addEventListener('change', e => {
 ssCreateBtn.addEventListener('click', async () => {
   hideError(ssError);
   const files = getSlotFiles();
-  if (files.length < 2) { showError(ssError, 'En az 2 fotoğraf seçin'); return; }
+  if (files.length < 2) { showError(ssError, t('err.needTwoPhotos')); return; }
   ssCreateBtn.disabled = true;
   ssProgress.classList.remove('hidden');
   ssResult.classList.add('hidden');
   ssProgressFill.style.width = '5%';
-  ssProgressText.textContent = 'Video oluşturuluyor...';
+  ssProgressText.textContent = t('slideshow.creating');
   ssAbort = new AbortController();
   try {
     const form = new FormData();
@@ -1053,9 +951,9 @@ ssCreateBtn.addEventListener('click', async () => {
     if (ssAudioFile) form.append('audio', ssAudioFile);
     const res = await fetch('/api/slideshow', { method: 'POST', body: form, signal: ssAbort.signal });
     const data = await res.json();
-    if (!res.ok) { ssProgressText.textContent = 'Hata: ' + data.error; ssCancel(); return; }
+    if (!res.ok) { ssProgressText.textContent = t('common.errorPrefix') + data.error; ssCancel(); return; }
     ssProgressFill.style.width = '90%';
-    ssProgressText.textContent = 'Hazırlanıyor...';
+    ssProgressText.textContent = t('common.preparing');
     ssResult.classList.remove('hidden');
     ssDownloadBtn.onclick = () => {
       const a = document.createElement('a');
@@ -1063,11 +961,11 @@ ssCreateBtn.addEventListener('click', async () => {
       a.download = data.title + '.mp4';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
-    setTimeout(() => { ssProgressFill.style.width = '100%'; ssProgressText.textContent = '✅ Video hazır!'; setTimeout(() => { ssProgress.classList.add('hidden'); ssProgressFill.style.width = '0%'; ssCancel(); }, 3000); }, 500);
+    setTimeout(() => { ssProgressFill.style.width = '100%'; ssProgressText.textContent = t('slideshow.ready'); setTimeout(() => { ssProgress.classList.add('hidden'); ssProgressFill.style.width = '0%'; ssCancel(); }, 3000); }, 500);
   } catch (err) {
-    if (err.name === 'AbortError') { ssProgressText.textContent = '⚠ İptal edildi'; } else { ssProgressText.textContent = 'Hata: ' + err.message; }
+    if (err.name === 'AbortError') { ssProgressText.textContent = t('common.cancelled'); } else { ssProgressText.textContent = t('common.errorPrefix') + err.message; }
     ssCancel();
   }
 });
 function ssCancel() { ssCreateBtn.disabled = false; ssAbort = null; }
-ssCancelBtn.addEventListener('click', () => { if (ssAbort) { ssAbort.abort(); ssProgressText.textContent = '⚠ İptal ediliyor...'; ssCancelBtn.disabled = true; } });
+ssCancelBtn.addEventListener('click', () => { if (ssAbort) { ssAbort.abort(); ssProgressText.textContent = t('common.cancelling'); ssCancelBtn.disabled = true; } });

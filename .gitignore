@@ -4,4 +4,6 @@ processed/
 uploads/
 DejaVuSans.ttf
 *.zip
-177983488288*.js
+cookies.txt
+kick.txt
+.env

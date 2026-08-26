@@ -13,12 +13,12 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fontkit = require('@pdf-lib/fontkit');
 const mammoth = require('mammoth');
 const { Document: DocxDoc, Packer, Paragraph, TextRun } = require('docx');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const YT_TIMEOUT = 40000;
 const YT_API_KEY = process.env.YOUTUBE_API_KEY || '';
+const COOKIE_ADMIN_TOKEN = process.env.COOKIE_ADMIN_TOKEN || '';
 let pdfFontBytes = null;
 
 function parseIsoDuration(d) {
@@ -47,14 +47,51 @@ async function ytApiInfo(videoId) {
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const dls = path.join(__dirname, 'downloads');
 const prc = path.join(__dirname, 'processed');
 const upl = path.join(__dirname, 'uploads');
 [dls, prc, upl].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d); });
-const upload = multer({ dest: upl });
+const upload = multer({ dest: upl, limits: { fileSize: 2 * 1024 * 1024 * 1024 } });
+
+// ---- Basit bellek-içi IP başına rate limit (ağır endpoint'ler için) ----
+const rateBuckets = new Map();
+function rateLimit(maxReq, windowMs) {
+  return (req, res, next) => {
+    const key = req.ip + ':' + req.path;
+    const now = Date.now();
+    let bucket = rateBuckets.get(key);
+    if (!bucket || now - bucket.start > windowMs) { bucket = { start: now, count: 0 }; rateBuckets.set(key, bucket); }
+    bucket.count++;
+    if (bucket.count > maxReq) return res.status(429).json({ error: 'Çok fazla istek, biraz sonra tekrar deneyin.' });
+    next();
+  };
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateBuckets) if (now - bucket.start > 10 * 60 * 1000) rateBuckets.delete(key);
+}, 10 * 60 * 1000).unref();
+const heavyLimit = rateLimit(20, 60 * 1000);
+
+// ---- Yarım kalan / unutulan geçici dosyaları periyodik temizle (indirme hataları, kesilen istekler vb.) ----
+const MAX_TEMP_AGE_MS = 2 * 60 * 60 * 1000;
+function cleanupStaleTemp() {
+  for (const dir of [dls, upl, prc]) {
+    let entries;
+    try { entries = fs.readdirSync(dir); } catch { continue; }
+    const now = Date.now();
+    for (const name of entries) {
+      const fp = path.join(dir, name);
+      try {
+        const st = fs.statSync(fp);
+        if (st.isFile() && now - st.mtimeMs > MAX_TEMP_AGE_MS) fs.unlinkSync(fp);
+      } catch {}
+    }
+  }
+}
+setInterval(cleanupStaleTemp, 30 * 60 * 1000).unref();
 
 const ffDir = path.dirname(ffmpegPath);
 
@@ -86,7 +123,7 @@ function getCookiePath() {
   if (fs.existsSync(kick) && fs.statSync(kick).size > 10) return kick;
   const cookies = path.join(__dirname, 'cookies.txt');
   if (fs.existsSync(cookies) && fs.statSync(cookies).size > 10) return cookies;
-  return '';
+  return cookies;
 }
 function cookieFlags() { const p = getCookiePath(); return p ? ['--cookies', p] : []; }
 
@@ -228,7 +265,7 @@ app.post('/api/info', async (req, res) => {
   }
 });
 
-app.post('/api/convert', async (req, res) => {
+app.post('/api/convert', heavyLimit, async (req, res) => {
   try {
     let { url, format, quality } = req.body;
     if (!url) return res.status(400).json({ error: 'URL girin' });
@@ -276,7 +313,7 @@ app.post('/api/convert', async (req, res) => {
   }
 });
 
-app.post('/api/trim', upload.single('video'), async (req, res) => {
+app.post('/api/trim', heavyLimit, upload.single('video'), async (req, res) => {
   try {
     let inputPath, baseName;
     if (req.file) {
@@ -323,7 +360,7 @@ const audioFormatMap = {
   ogg: 'libvorbis', aac: 'aac', m4a: 'aac', wma: 'wmav2'
 };
 
-app.post('/api/convert-file', upload.single('file'), async (req, res) => {
+app.post('/api/convert-file', heavyLimit, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Dosya gerekli' });
     const inputPath = req.file.path;
@@ -376,8 +413,6 @@ app.post('/api/convert-file', upload.single('file'), async (req, res) => {
         await archive.finalize();
         output.on('close', () => { extracted.forEach(f => safeUnlink(path.join(prc, f))); res.json({ file: zipName, title: baseName }); });
         output.on('error', () => res.status(500).json({ error: 'ZIP hatası' }));
-
-        setTimeout(() => { extracted.forEach(f => safeUnlink(path.join(prc, f))); }, 1000);
       } catch { safeUnlink(inputPath); return res.status(500).json({ error: 'ZIP açılamadı' }); }
       return;
     }
@@ -425,10 +460,10 @@ app.post('/api/convert-file', upload.single('file'), async (req, res) => {
   }
 });
 
-const imgExts = ['jpg','jpeg','png','gif','webp','bmp','tiff','tif','svg'];
+const imgExts = ['jpg','jpeg','png'];
 const txtExts = ['txt','csv','md','json','xml','log','ini','cfg','yaml','yml','env'];
 
-app.post('/api/pdf-convert', upload.single('file'), async (req, res) => {
+app.post('/api/pdf-convert', heavyLimit, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Dosya gerekli' });
     const inputPath = req.file.path;
@@ -503,7 +538,7 @@ app.post('/api/pdf-convert', upload.single('file'), async (req, res) => {
       }
     } else {
       safeUnlink(inputPath);
-      return res.status(400).json({ error: `PDF dönüşümü ${ext} için desteklenmiyor. Desteklenen: resim (jpg,png,gif,webp), belge (txt,csv,md,json,docx)` });
+      return res.status(400).json({ error: `PDF dönüşümü ${ext} için desteklenmiyor. Desteklenen: resim (jpg,png), belge (txt,csv,md,json,docx)` });
     }
 
     const pdfBytes = await pdfDoc.save();
@@ -557,37 +592,11 @@ app.post('/api/document-save', upload.none(), async (req, res) => {
   }
 });
 
-app.post('/api/send-mail', upload.single('attachment'), async (req, res) => {
-  try {
-    const { host, port, user, pass, fromName, to, subject, body } = req.body;
-    if (!host || !user || !pass || !to || !subject || !body) return res.status(400).json({ error: 'Eksik alanlar (host, user, pass, to, subject, body gerekli)' });
-    const recipients = to.split(/[\n,;]+/).map(e => e.trim()).filter(e => e.includes('@'));
-    if (recipients.length === 0) return res.status(400).json({ error: 'Geçerli e-posta bulunamadı' });
-    const transporter = nodemailer.createTransport({ host, port: parseInt(port) || 587, secure: parseInt(port) === 465, auth: { user, pass } });
-    await transporter.verify();
-    const results = [];
-    for (const addr of recipients) {
-      try {
-        const mailOpts = {
-          from: `"${fromName || user}" <${user}>`, to: addr,
-          subject, text: body,
-          attachments: req.file ? [{ filename: req.file.originalname, path: req.file.path }] : []
-        };
-        const info = await transporter.sendMail(mailOpts);
-        results.push({ email: addr, status: 'ok', id: info.messageId });
-      } catch (e) {
-        results.push({ email: addr, status: 'hata', error: e.message });
-      }
-    }
-    if (req.file) safeUnlink(req.file.path);
-    res.json({ sent: results.filter(r => r.status === 'ok').length, failed: results.filter(r => r.status === 'hata').length, results });
-  } catch (err) {
-    res.status(500).json({ error: 'SMTP bağlantı hatası: ' + err.message });
-  }
-});
-
 app.post('/api/cookies', (req, res) => {
   try {
+    if (COOKIE_ADMIN_TOKEN && req.get('x-admin-token') !== COOKIE_ADMIN_TOKEN) {
+      return res.status(403).json({ error: 'Yetkisiz' });
+    }
     const { cookies } = req.body;
     if (!cookies) return res.status(400).json({ error: 'Cookie gerekli' });
     fs.writeFileSync(getCookiePath(), cookies);
@@ -598,7 +607,7 @@ app.post('/api/cookies', (req, res) => {
   }
 });
 
-app.post('/api/compress', upload.single('video'), async (req, res) => {
+app.post('/api/compress', heavyLimit, upload.single('video'), async (req, res) => {
   try {
     let inputPath, baseName, origSize;
     if (req.file) {
@@ -639,7 +648,7 @@ app.post('/api/compress', upload.single('video'), async (req, res) => {
   }
 });
 
-app.post('/api/slideshow', upload.any(), async (req, res) => {
+app.post('/api/slideshow', heavyLimit, upload.any(), async (req, res) => {
   try {
     const images = (req.files || []).filter(f => f.fieldname === 'images');
     if (images.length < 2) { return res.status(400).json({ error: 'En az 2 fotoğraf gerekli' }); }
@@ -723,6 +732,17 @@ app.get('/api/download/:file', (req, res) => {
   const fp = path.join(prc, name);
   if (!fs.existsSync(fp)) return res.status(404).json({ error: 'Dosya bulunamadı' });
   res.download(fp, () => { setTimeout(() => safeUnlink(fp), 60000); });
+});
+
+app.use((req, res) => { res.status(404).json({ error: 'Bulunamadı' }); });
+
+// Merkezi hata yakalayıcı: bozuk JSON body, çok büyük dosya/istek vb. her zaman JSON döner
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Geçersiz istek gövdesi (JSON)' });
+  if (err.type === 'entity.too.large' || err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'Dosya/istek çok büyük' });
+  console.error(err);
+  res.status(500).json({ error: err.message || 'Sunucu hatası' });
 });
 
 function getDuration(start, end) {

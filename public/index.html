@@ -3,35 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OmniTool - Her Şey İçin Tek Araç</title>
+  <title data-i18n="app.title">OmniTool - Her Şey İçin Tek Araç</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%99%EF%B8%8F%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
     <header>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button class="lang-btn" data-lang="tr">TR</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
       <h1><span class="accent-red">Omni</span><span class="accent-blue">Tool</span></h1>
-      <p>Video &bull; Ses &bull; PDF &bull; Belge &bull; ZIP &bull; Her Şey</p>
+      <p data-i18n="header.tagline">Video &bull; Ses &bull; PDF &bull; Belge &bull; ZIP &bull; Her Şey</p>
     </header>
 
     <div class="tabs">
-      <button class="tab-btn active" data-tab="convert">Dönüştürücü</button>
-      <button class="tab-btn" data-tab="compress">Sıkıştırıcı</button>
-      <button class="tab-btn" data-tab="files">Dosya Araçları</button>
-      <button class="tab-btn" data-tab="pdf">PDF Dönüştürücü</button>
-      <button class="tab-btn" data-tab="editor">Belge Düzenleyici</button>
-      <button class="tab-btn" data-tab="stream">Yayın Araçları</button>
-      <button class="tab-btn" data-tab="mail">Mail Araçları</button>
-
-      <button class="tab-btn" data-tab="trim">Video Kesici</button>
-      <button class="tab-btn" data-tab="slideshow">Video Yapıcı</button>
+      <button class="tab-btn active" data-tab="convert" data-i18n="tab.convert">Dönüştürücü</button>
+      <button class="tab-btn" data-tab="compress" data-i18n="tab.compress">Sıkıştırıcı</button>
+      <button class="tab-btn" data-tab="files" data-i18n="tab.files">Dosya Araçları</button>
+      <button class="tab-btn" data-tab="pdf" data-i18n="tab.pdf">PDF Dönüştürücü</button>
+      <button class="tab-btn" data-tab="editor" data-i18n="tab.editor">Belge Düzenleyici</button>
+      <button class="tab-btn" data-tab="stream" data-i18n="tab.stream">Yayın Araçları</button>
+      <button class="tab-btn" data-tab="trim" data-i18n="tab.trim">Video Kesici</button>
+      <button class="tab-btn" data-tab="slideshow" data-i18n="tab.slideshow">Video Yapıcı</button>
     </div>
 
     <!-- CONVERT TAB -->
     <section id="tab-convert" class="tab-content active">
       <div class="card">
+        <h3 data-i18n="convert.title">🔗 Video &amp; Ses İndirici</h3>
+        <p class="card-desc" data-i18n="convert.desc">YouTube, Instagram, TikTok, Twitter/X, SoundCloud ve daha fazlasından video/ses indir, MP4 veya MP3 olarak kaydet.</p>
         <div class="url-input-wrapper">
-          <input type="text" id="convUrl" placeholder="YouTube, Instagram, TikTok, Twitter/X, SoundCloud... URL yapıştır" class="url-input">
-          <button id="convLoadBtn" class="btn btn-primary">Bilgi Al</button>
+          <input type="text" id="convUrl" data-i18n-placeholder="convert.urlPlaceholder" placeholder="YouTube, Instagram, TikTok, Twitter/X, SoundCloud... URL yapıştır" class="url-input">
+          <button id="convLoadBtn" class="btn btn-primary" data-i18n="common.getInfo">Bilgi Al</button>
         </div>
         <div id="convError" class="error-msg hidden"></div>
       </div>
@@ -49,25 +54,25 @@
 
         <div class="convert-options">
           <div class="option-group">
-            <label>Format</label>
+            <label data-i18n="common.format">Format</label>
             <div class="radio-group">
               <label class="radio"><input type="radio" name="fmt" value="mp4" checked> MP4</label>
               <label class="radio"><input type="radio" name="fmt" value="mp3"> MP3</label>
             </div>
           </div>
           <div class="option-group">
-            <label>Kalite</label>
+            <label data-i18n="common.quality">Kalite</label>
             <select id="qualitySelect" class="select-input"></select>
           </div>
         </div>
 
         <div class="convert-actions">
-          <button id="convertBtn" class="btn btn-accent">İndir</button>
-          <button id="sendToTrimBtn" class="btn btn-secondary">Kesiciye Gönder</button>
+          <button id="convertBtn" class="btn btn-accent" data-i18n="common.download">İndir</button>
+          <button id="sendToTrimBtn" class="btn btn-secondary" data-i18n="convert.sendToTrim">Kesiciye Gönder</button>
         </div>
         <div id="convProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="convProgressFill" class="progress-fill"></div></div>
-          <p id="convProgressText">İşleniyor...</p>
+          <p id="convProgressText" data-i18n="common.processing">İşleniyor...</p>
         </div>
       </div>
     </section>
@@ -75,20 +80,20 @@
     <!-- COMPRESS TAB -->
     <section id="tab-compress" class="tab-content">
       <div class="card">
-        <h3>Video Sıkıştır</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Dosya boyutunu kaliteyi koruyarak küçült. Discord, e-posta, web için ideal.</p>
+        <h3 data-i18n="compress.title">Video Sıkıştır</h3>
+        <p class="card-desc" data-i18n="compress.desc">Dosya boyutunu kaliteyi koruyarak küçült. Discord, e-posta, web için ideal.</p>
         <div class="url-input-wrapper" style="margin-bottom:1rem">
-          <input type="text" id="compUrl" placeholder="YouTube/Instagram URL veya boş bırak dosya yükle..." class="url-input">
-          <button id="compLoadBtn" class="btn btn-primary">Bilgi Al</button>
+          <input type="text" id="compUrl" data-i18n-placeholder="compress.urlPlaceholder" placeholder="YouTube/Instagram URL veya boş bırak dosya yükle..." class="url-input">
+          <button id="compLoadBtn" class="btn btn-primary" data-i18n="common.getInfo">Bilgi Al</button>
         </div>
         <div class="upload-area" id="compUploadArea">
-          <p>Veya video dosyasını sürükle-bırak / tıkla seç</p>
+          <p data-i18n="common.dragDropVideo">Veya video dosyasını sürükle-bırak / tıkla seç</p>
           <input type="file" id="compFileInput" accept="video/mp4,video/webm,audio/mp3" hidden>
-          <button id="compSelectBtn" class="btn btn-outline">Dosya Seç</button>
+          <button id="compSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
         </div>
         <div id="compFileInfo" class="hidden" style="margin-bottom:0.8rem">
           <p id="compFileName" class="file-name"></p>
-          <button id="compClearBtn" class="btn btn-small btn-outline">Kaldır</button>
+          <button id="compClearBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
         </div>
         <div id="compError" class="error-msg hidden"></div>
       </div>
@@ -96,24 +101,24 @@
       <div id="compSection" class="card hidden">
         <div class="convert-options">
           <div class="option-group">
-            <label>Sıkıştırma Seviyesi</label>
+            <label data-i18n="compress.levelLabel">Sıkıştırma Seviyesi</label>
             <div class="radio-group" id="compLevels">
-              <label class="radio"><input type="radio" name="clvl" value="dusuk"> Düşük</label>
-              <label class="radio"><input type="radio" name="clvl" value="orta" checked> Orta</label>
-              <label class="radio"><input type="radio" name="clvl" value="yuksek"> Yüksek</label>
-              <label class="radio"><input type="radio" name="clvl" value="cyuksek"> Çok Y.</label>
+              <label class="radio"><input type="radio" name="clvl" value="dusuk"> <span data-i18n="compress.low">Düşük</span></label>
+              <label class="radio"><input type="radio" name="clvl" value="orta" checked> <span data-i18n="compress.medium">Orta</span></label>
+              <label class="radio"><input type="radio" name="clvl" value="yuksek"> <span data-i18n="compress.high">Yüksek</span></label>
+              <label class="radio"><input type="radio" name="clvl" value="cyuksek"> <span data-i18n="compress.veryHigh">Çok Y.</span></label>
             </div>
           </div>
         </div>
-        <div style="margin-bottom:1rem;font-size:0.85rem;color:var(--text-secondary)" id="compSizeInfo">Henüz dosya seçilmedi</div>
-        <button id="compressBtn" class="btn btn-accent">🗜 Sıkıştır</button>
+        <div style="margin-bottom:1rem;font-size:0.85rem;color:var(--text-secondary)" id="compSizeInfo" data-i18n="compress.noFileYet">Henüz dosya seçilmedi</div>
+        <button id="compressBtn" class="btn btn-accent" data-i18n="compress.compressBtn">🗜 Sıkıştır</button>
         <div id="compProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="compProgressFill" class="progress-fill"></div></div>
-          <p id="compProgressText">Sıkıştırılıyor...</p>
+          <p id="compProgressText" data-i18n="compress.compressing">Sıkıştırılıyor...</p>
         </div>
         <div id="compResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
           <p id="compResultText" style="color:var(--green);font-weight:600"></p>
-          <button id="compDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir</button>
+          <button id="compDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="common.downloadBtn">⬇ İndir</button>
         </div>
       </div>
     </section>
@@ -121,16 +126,16 @@
     <!-- FILES TAB -->
     <section id="tab-files" class="tab-content">
       <div class="card">
-        <h3>📁 Format Dönüştürücü</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Video/audio formatlarını birbirine çevir. ZIP sıkıştır/aç.</p>
+        <h3 data-i18n="files.title">📁 Format Dönüştürücü</h3>
+        <p class="card-desc" data-i18n="files.desc">Video/audio formatlarını birbirine çevir. ZIP sıkıştır/aç.</p>
         <div class="upload-area" id="filesUploadArea">
-          <p>Dosyayı sürükle-bırak veya tıkla seç</p>
+          <p data-i18n="common.dragDropFile">Dosyayı sürükle-bırak veya tıkla seç</p>
           <input type="file" id="filesFileInput" hidden>
-          <button id="filesSelectBtn" class="btn btn-outline">Dosya Seç</button>
+          <button id="filesSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
         </div>
         <div id="filesFileInfo" class="hidden" style="margin-bottom:0.8rem">
           <p id="filesFileName" class="file-name"></p>
-          <button id="filesClearBtn" class="btn btn-small btn-outline">Kaldır</button>
+          <button id="filesClearBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
         </div>
         <div id="filesError" class="error-msg hidden"></div>
       </div>
@@ -138,17 +143,17 @@
       <div id="filesSection" class="card hidden">
         <div class="convert-options">
           <div class="option-group">
-            <label>İşlem</label>
+            <label data-i18n="common.operation">İşlem</label>
             <div class="radio-group" id="filesOps">
-              <label class="radio"><input type="radio" name="fop" value="convert" checked> Dönüştür</label>
-              <label class="radio"><input type="radio" name="fop" value="zip"> ZIP Yap</label>
-              <label class="radio"><input type="radio" name="fop" value="unzip"> ZIP Aç</label>
+              <label class="radio"><input type="radio" name="fop" value="convert" checked> <span data-i18n="files.opConvert">Dönüştür</span></label>
+              <label class="radio"><input type="radio" name="fop" value="zip"> <span data-i18n="files.opZip">ZIP Yap</span></label>
+              <label class="radio"><input type="radio" name="fop" value="unzip"> <span data-i18n="files.opUnzip">ZIP Aç</span></label>
             </div>
           </div>
           <div class="option-group" id="filesFormatGroup">
-            <label>Hedef Format</label>
+            <label data-i18n="files.targetFormat">Hedef Format</label>
             <select id="filesTargetFormat" class="select-input">
-              <optgroup label="Video">
+              <optgroup label="Video" data-i18n-label="common.video">
                 <option value="mp4">MP4</option>
                 <option value="avi">AVI</option>
                 <option value="mkv">MKV</option>
@@ -158,7 +163,7 @@
                 <option value="wmv">WMV</option>
                 <option value="flv">FLV</option>
               </optgroup>
-              <optgroup label="Ses">
+              <optgroup label="Ses" data-i18n-label="common.audio">
                 <option value="mp3">MP3</option>
                 <option value="wav">WAV</option>
                 <option value="flac">FLAC</option>
@@ -171,14 +176,14 @@
           </div>
         </div>
         <div id="filesSizeInfo" style="margin-bottom:1rem;font-size:0.85rem;color:var(--text-secondary)"></div>
-        <button id="filesProcessBtn" class="btn btn-accent">🚀 İşle</button>
+        <button id="filesProcessBtn" class="btn btn-accent" data-i18n="files.processBtn">🚀 İşle</button>
         <div id="filesProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="filesProgressFill" class="progress-fill"></div></div>
-          <p id="filesProgressText">İşleniyor...</p>
+          <p id="filesProgressText" data-i18n="common.processing">İşleniyor...</p>
         </div>
         <div id="filesResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
           <p id="filesResultText" style="color:var(--green);font-weight:600"></p>
-          <button id="filesDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir</button>
+          <button id="filesDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="common.downloadBtn">⬇ İndir</button>
         </div>
       </div>
     </section>
@@ -186,29 +191,29 @@
     <!-- PDF TAB -->
     <section id="tab-pdf" class="tab-content">
       <div class="card">
-        <h3>📄 PDF Dönüştürücü</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Resim, metin, Word belgelerini PDF'ye çevir. Tek tıkla.</p>
+        <h3 data-i18n="pdf.title">📄 PDF Dönüştürücü</h3>
+        <p class="card-desc" data-i18n="pdf.desc">Resim, metin, Word belgelerini PDF'ye çevir. Tek tıkla.</p>
         <div class="upload-area" id="pdfUploadArea">
-          <p>Dosyayı sürükle-bırak veya tıkla seç</p>
+          <p data-i18n="common.dragDropFile">Dosyayı sürükle-bırak veya tıkla seç</p>
           <input type="file" id="pdfFileInput" hidden>
-          <button id="pdfSelectBtn" class="btn btn-outline">Dosya Seç</button>
+          <button id="pdfSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
         </div>
         <div id="pdfFileInfo" class="hidden" style="margin-bottom:0.8rem">
           <p id="pdfFileName" class="file-name"></p>
-          <button id="pdfClearBtn" class="btn btn-small btn-outline">Kaldır</button>
+          <button id="pdfClearBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
         </div>
         <div id="pdfError" class="error-msg hidden"></div>
         <div id="pdfSection" class="hidden" style="margin-top:1rem">
           <div id="pdfPreview" class="hidden" style="margin-bottom:1rem;padding:1rem;background:var(--card-bg);border-radius:8px;max-height:300px;overflow:auto;white-space:pre-wrap;font-size:0.85rem;color:var(--text-secondary);border:1px solid var(--border)"></div>
-          <button id="pdfConvertBtn" class="btn btn-accent">📄 PDF'ye Çevir</button>
+          <button id="pdfConvertBtn" class="btn btn-accent" data-i18n="pdf.convertBtn">📄 PDF'ye Çevir</button>
         </div>
         <div id="pdfProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="pdfProgressFill" class="progress-fill"></div></div>
-          <p id="pdfProgressText">PDF oluşturuluyor...</p>
+          <p id="pdfProgressText" data-i18n="pdf.creating">PDF oluşturuluyor...</p>
         </div>
         <div id="pdfResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
-          <p id="pdfResultText" style="color:var(--green);font-weight:600">✅ PDF hazır!</p>
-          <button id="pdfDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir</button>
+          <p id="pdfResultText" style="color:var(--green);font-weight:600" data-i18n="pdf.ready">✅ PDF hazır!</p>
+          <button id="pdfDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="common.downloadBtn">⬇ İndir</button>
         </div>
       </div>
     </section>
@@ -216,16 +221,16 @@
     <!-- EDITOR TAB -->
     <section id="tab-editor" class="tab-content">
       <div class="card">
-        <h3>✏️ Belge Düzenleyici</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">TXT/DOCX yükle, içeriği düzenle, TXT veya DOCX olarak kaydet.</p>
+        <h3 data-i18n="editor.title">✏️ Belge Düzenleyici</h3>
+        <p class="card-desc" data-i18n="editor.desc">TXT/DOCX yükle, içeriği düzenle, TXT veya DOCX olarak kaydet.</p>
         <div class="upload-area" id="editUploadArea">
-          <p>Belge dosyasını sürükle-bırak veya tıkla seç (.txt, .docx)</p>
+          <p data-i18n="editor.dragDrop">Belge dosyasını sürükle-bırak veya tıkla seç (.txt, .docx)</p>
           <input type="file" id="editFileInput" accept=".txt,.docx,.md,.csv,.json,.xml,.log,.ini,.cfg,.yaml,.yml,.env" hidden>
-          <button id="editSelectBtn" class="btn btn-outline">Dosya Seç</button>
+          <button id="editSelectBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
         </div>
         <div id="editFileInfo" class="hidden" style="margin-bottom:0.8rem">
           <p id="editFileName" class="file-name"></p>
-          <button id="editClearBtn" class="btn btn-small btn-outline">Kaldır</button>
+          <button id="editClearBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
         </div>
         <div id="editError" class="error-msg hidden"></div>
       </div>
@@ -233,24 +238,24 @@
       <div id="editSection" class="card hidden">
         <div class="convert-options" style="margin-bottom:0.8rem">
           <div class="option-group">
-            <label>Kaydet</label>
+            <label data-i18n="common.save">Kaydet</label>
             <div class="radio-group">
               <label class="radio"><input type="radio" name="editFmt" value="txt" checked> TXT</label>
               <label class="radio"><input type="radio" name="editFmt" value="docx"> DOCX</label>
             </div>
           </div>
         </div>
-        <textarea id="editTextarea" style="width:100%;min-height:350px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.9rem;resize:vertical" placeholder="İçerik burada görünecek..."></textarea>
+        <textarea id="editTextarea" data-i18n-placeholder="editor.placeholder" style="width:100%;min-height:350px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.9rem;resize:vertical" placeholder="İçerik burada görünecek..."></textarea>
         <div style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap">
-          <button id="editSaveBtn" class="btn btn-accent">💾 Kaydet & İndir</button>
+          <button id="editSaveBtn" class="btn btn-accent" data-i18n="editor.saveBtn">💾 Kaydet &amp; İndir</button>
         </div>
         <div id="editProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="editProgressFill" class="progress-fill"></div></div>
-          <p id="editProgressText">Kaydediliyor...</p>
+          <p id="editProgressText" data-i18n="editor.saving">Kaydediliyor...</p>
         </div>
         <div id="editResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
           <p id="editResultText" style="color:var(--green);font-weight:600"></p>
-          <button id="editDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir</button>
+          <button id="editDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="common.downloadBtn">⬇ İndir</button>
         </div>
       </div>
     </section>
@@ -258,9 +263,11 @@
     <!-- STREAM TAB -->
     <section id="tab-stream" class="tab-content">
       <div class="card">
+        <h3 data-i18n="stream.title">📡 Yayın Kaydı İndirici</h3>
+        <p class="card-desc" data-i18n="stream.desc">Twitch ve Kick VOD'larını indir, istediğin bölümü kes.</p>
         <div class="url-input-wrapper">
-          <input type="text" id="streamUrl" placeholder="Twitch VOD / Kick VOD URL yapıştır..." class="url-input">
-          <button id="streamLoadBtn" class="btn btn-primary">Bilgi Al</button>
+          <input type="text" id="streamUrl" data-i18n-placeholder="stream.urlPlaceholder" placeholder="Twitch VOD / Kick VOD URL yapıştır..." class="url-input">
+          <button id="streamLoadBtn" class="btn btn-primary" data-i18n="common.getInfo">Bilgi Al</button>
         </div>
         <div id="streamError" class="error-msg hidden"></div>
         <div style="display:flex;gap:0.5rem;margin-top:0.6rem;flex-wrap:wrap">
@@ -282,21 +289,21 @@
 
         <div class="convert-options">
           <div class="option-group">
-            <label>İşlem</label>
+            <label data-i18n="common.operation">İşlem</label>
             <div class="radio-group">
-              <label class="radio"><input type="radio" name="streamOp" value="download" checked> İndir</label>
-              <label class="radio"><input type="radio" name="streamOp" value="trim"> Kes & İndir</label>
+              <label class="radio"><input type="radio" name="streamOp" value="download" checked> <span data-i18n="common.download">İndir</span></label>
+              <label class="radio"><input type="radio" name="streamOp" value="trim"> <span data-i18n="stream.opTrim">Kes &amp; İndir</span></label>
             </div>
           </div>
           <div class="option-group">
-            <label>Kalite</label>
+            <label data-i18n="common.quality">Kalite</label>
             <select id="streamQuality" class="select-input">
-              <option value="best">En iyi</option>
+              <option value="best" data-i18n="stream.best">En iyi</option>
               <option value="1080p">1080p</option>
               <option value="720p" selected>720p</option>
               <option value="480p">480p</option>
               <option value="360p">360p</option>
-              <option value="mp3">Sadece ses (MP3)</option>
+              <option value="mp3" data-i18n="stream.audioOnly">Sadece ses (MP3)</option>
             </select>
           </div>
         </div>
@@ -306,98 +313,53 @@
         </div>
 
         <div id="streamTrimSection" class="hidden" style="margin-bottom:0.8rem">
-          <h3 style="font-size:0.95rem;margin-bottom:0.5rem">✂ Kesim Ayarları</h3>
+          <h3 style="font-size:0.95rem;margin-bottom:0.5rem" data-i18n="common.trimSettings">✂ Kesim Ayarları</h3>
           <div class="trim-controls" style="gap:0.8rem">
             <div class="trim-group">
-              <label>Başlangıç</label>
+              <label data-i18n="common.start">Başlangıç</label>
               <div class="time-inputs">
                 <input type="number" id="streamStartMin" min="0" value="0" class="time-input"> :
                 <input type="number" id="streamStartSec" min="0" max="59" value="0" class="time-input">
               </div>
-              <button id="streamSetStartBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem">Şu Anı Ayarla</button>
+              <button id="streamSetStartBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem" data-i18n="common.setCurrentTime">Şu Anı Ayarla</button>
             </div>
             <div class="trim-group">
-              <label>Bitiş</label>
+              <label data-i18n="common.end">Bitiş</label>
               <div class="time-inputs">
                 <input type="number" id="streamEndMin" min="0" value="0" class="time-input"> :
                 <input type="number" id="streamEndSec" min="0" max="59" value="0" class="time-input">
               </div>
-              <button id="streamSetEndBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem">Şu Anı Ayarla</button>
+              <button id="streamSetEndBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem" data-i18n="common.setCurrentTime">Şu Anı Ayarla</button>
             </div>
           </div>
         </div>
 
         <div class="convert-actions">
-          <button id="streamDownloadBtn" class="btn btn-accent" style="flex:1">⬇ İndir</button>
+          <button id="streamDownloadBtn" class="btn btn-accent" style="flex:1" data-i18n="common.downloadBtn">⬇ İndir</button>
         </div>
         <div id="streamProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="streamProgressFill" class="progress-fill"></div></div>
-          <p id="streamProgressText">İşleniyor...</p>
+          <p id="streamProgressText" data-i18n="common.processing">İşleniyor...</p>
         </div>
         <div id="streamResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
           <p id="streamResultText" style="color:var(--green);font-weight:600"></p>
-          <button id="streamResultDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir</button>
+          <button id="streamResultDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="common.downloadBtn">⬇ İndir</button>
         </div>
       </div>
     </section>
 
-    <!-- MAIL TAB -->
-    <section id="tab-mail" class="tab-content">
-      <div class="card">
-        <h3>📧 Toplu Mail Gönder</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Kendi SMTP hesabınla birden çok kişiye aynı maili gönder. Görsel ekle, toplu gönder.</p>
-
-        <details style="margin-bottom:1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:0.8rem">
-          <summary style="cursor:pointer;font-weight:600;color:var(--blue)">⚙ SMTP Ayarları</summary>
-          <div style="margin-top:0.8rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem">
-            <input type="text" id="mailHost" placeholder="SMTP Host (smtp.gmail.com)" class="url-input" style="padding:0.6rem;font-size:0.85rem">
-            <input type="text" id="mailPort" placeholder="Port (587)" class="url-input" style="padding:0.6rem;font-size:0.85rem">
-            <input type="email" id="mailUser" placeholder="E-posta adresin" class="url-input" style="padding:0.6rem;font-size:0.85rem">
-            <input type="password" id="mailPass" placeholder="Şifre / App Password" class="url-input" style="padding:0.6rem;font-size:0.85rem">
-            <input type="text" id="mailName" placeholder="Görünen adın (opsiyonel)" class="url-input" style="padding:0.6rem;font-size:0.85rem;grid-column:span 2">
-          </div>
-          <button id="mailSaveSmtp" class="btn btn-small btn-outline" style="margin-top:0.6rem">💾 Kaydet</button>
-          <span id="mailSmtpStatus" style="margin-left:0.5rem;font-size:0.85rem;color:var(--green)"></span>
-        </details>
-
-        <div style="margin-bottom:0.8rem">
-          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.3rem">Alıcılar (virgül / satırla ayır)</label>
-          <textarea id="mailTo" placeholder="ornek@mail.com, ikinci@mail.com" class="url-input" style="width:100%;min-height:60px;padding:0.6rem;font-size:0.85rem;resize:vertical;font-family:inherit"></textarea>
-        </div>
-        <div style="margin-bottom:0.8rem">
-          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.3rem">Konu</label>
-          <input type="text" id="mailSubject" placeholder="Mail konusu" class="url-input" style="padding:0.6rem;font-size:0.85rem">
-        </div>
-        <div style="margin-bottom:0.8rem">
-          <label style="display:block;color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.3rem">Mesaj</label>
-          <textarea id="mailBody" placeholder="Mail içeriği..." class="url-input" style="width:100%;min-height:150px;padding:0.6rem;font-size:0.85rem;resize:vertical;font-family:inherit"></textarea>
-        </div>
-        <div style="margin-bottom:1rem">
-          <label style="color:var(--text-secondary);font-size:0.85rem;display:block;margin-bottom:0.3rem">Görsel / Dosya Eki (opsiyonel)</label>
-          <input type="file" id="mailAttachment" style="color:var(--text-secondary);font-size:0.85rem">
-        </div>
-
-        <div id="mailError" class="error-msg hidden"></div>
-        <button id="mailSendBtn" class="btn btn-accent">📤 Gönder</button>
-        <div id="mailProgress" class="progress-area hidden">
-          <div class="progress-bar"><div id="mailProgressFill" class="progress-fill"></div></div>
-          <p id="mailProgressText">Gönderiliyor...</p>
-        </div>
-        <div id="mailResult" class="hidden" style="margin-top:1rem"></div>
-      </div>
-    </section>
-
+    <!-- TRIM TAB -->
     <section id="tab-trim" class="tab-content">
       <div class="card">
-        <h3>Video Yükle</h3>
+        <h3 data-i18n="trim.uploadTitle">Video Yükle</h3>
         <div class="upload-area" id="uploadArea">
-          <p>Video dosyasını sürükle-bırak veya tıkla seç</p>
+          <p data-i18n="common.dragDropVideo2">Video dosyasını sürükle-bırak veya tıkla seç</p>
           <input type="file" id="fileInput" accept="video/mp4,video/webm,video/avi,audio/mp3" hidden>
-          <button id="selectFileBtn" class="btn btn-outline">Dosya Seç</button>
+          <button id="selectFileBtn" class="btn btn-outline" data-i18n="common.selectFile">Dosya Seç</button>
         </div>
         <div id="uploadInfo" class="hidden">
           <p id="fileNameDisplay" class="file-name"></p>
-          <button id="clearFileBtn" class="btn btn-small btn-outline">Kaldır</button>
+          <button id="clearFileBtn" class="btn btn-small btn-outline" data-i18n="common.remove">Kaldır</button>
         </div>
         <div id="trimError" class="error-msg hidden"></div>
       </div>
@@ -407,77 +369,78 @@
           <video id="trimPlayer" controls></video>
         </div>
         <div class="trim-section">
-          <h3><span class="accent-blue">✂</span> Kesim Ayarları</h3>
+          <h3><span class="accent-blue">✂</span> <span data-i18n="common.trimSettings2">Kesim Ayarları</span></h3>
           <div class="trim-controls">
             <div class="trim-group">
-              <label>Başlangıç</label>
+              <label data-i18n="common.start">Başlangıç</label>
               <div class="time-inputs">
                 <input type="number" id="trimStartMin" min="0" value="0" class="time-input"> :
                 <input type="number" id="trimStartSec" min="0" max="59" value="0" class="time-input">
               </div>
-              <button id="setTrimStartBtn" class="btn btn-small btn-outline">Şu Anı Ayarla</button>
+              <button id="setTrimStartBtn" class="btn btn-small btn-outline" data-i18n="common.setCurrentTime">Şu Anı Ayarla</button>
             </div>
             <div class="trim-group">
-              <label>Bitiş</label>
+              <label data-i18n="common.end">Bitiş</label>
               <div class="time-inputs">
                 <input type="number" id="trimEndMin" min="0" value="0" class="time-input"> :
                 <input type="number" id="trimEndSec" min="0" max="59" value="0" class="time-input">
               </div>
-              <button id="setTrimEndBtn" class="btn btn-small btn-outline">Şu Anı Ayarla</button>
+              <button id="setTrimEndBtn" class="btn btn-small btn-outline" data-i18n="common.setCurrentTime">Şu Anı Ayarla</button>
             </div>
           </div>
-          <button id="trimDownloadBtn" class="btn btn-accent">✂ Kes & İndir</button>
+          <button id="trimDownloadBtn" class="btn btn-accent" data-i18n="trim.trimBtn">✂ Kes &amp; İndir</button>
           <div id="trimProgress" class="progress-area hidden">
             <div class="progress-bar"><div id="trimProgressFill" class="progress-fill"></div></div>
-            <p id="trimProgressText">İşleniyor...</p>
+            <p id="trimProgressText" data-i18n="common.processing">İşleniyor...</p>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- SLIDESHOW TAB -->
     <section id="tab-slideshow" class="tab-content">
       <div class="card">
-        <h3>🎬 Video Yapıcı</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Fotoğraflardan geçiş efektli video yap, arka plan müzik ekle, MP4 olarak indir.</p>
+        <h3 data-i18n="slideshow.title">🎬 Video Yapıcı</h3>
+        <p class="card-desc" data-i18n="slideshow.desc">Fotoğraflardan geçiş efektli video yap, arka plan müzik ekle, MP4 olarak indir.</p>
           <div id="ssImageSlots" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.8rem">
             <div class="upload-area" style="padding:0.8rem;display:flex;align-items:center;gap:0.5rem">
-              <span style="font-weight:600;font-size:0.85rem;min-width:90px">1. Fotoğraf</span>
+              <span style="font-weight:600;font-size:0.85rem;min-width:90px" class="ssSlotLabel" data-n="1">1. Fotoğraf</span>
               <input type="file" accept="image/*" hidden>
-              <button class="btn btn-small btn-outline ssSlotBtn">📷 Seç</button>
+              <button class="btn btn-small btn-outline ssSlotBtn" data-i18n="slideshow.select">📷 Seç</button>
               <span class="ssSlotName" style="font-size:0.85rem;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
             </div>
             <div class="upload-area" style="padding:0.8rem;display:flex;align-items:center;gap:0.5rem">
-              <span style="font-weight:600;font-size:0.85rem;min-width:90px">2. Fotoğraf</span>
+              <span style="font-weight:600;font-size:0.85rem;min-width:90px" class="ssSlotLabel" data-n="2">2. Fotoğraf</span>
               <input type="file" accept="image/*" hidden>
-              <button class="btn btn-small btn-outline ssSlotBtn">📷 Seç</button>
+              <button class="btn btn-small btn-outline ssSlotBtn" data-i18n="slideshow.select">📷 Seç</button>
               <span class="ssSlotName" style="font-size:0.85rem;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
             </div>
           </div>
-          <button id="ssAddSlotBtn" class="btn btn-small btn-outline" style="margin-bottom:0.8rem">➕ Fotoğraf Ekle</button>
+          <button id="ssAddSlotBtn" class="btn btn-small btn-outline" style="margin-bottom:0.8rem" data-i18n="slideshow.addPhoto">➕ Fotoğraf Ekle</button>
         <div class="upload-area" style="padding:0.8rem;margin-bottom:0.8rem">
-          <p style="font-size:0.85rem">Arka plan müzik (opsiyonel)</p>
+          <p style="font-size:0.85rem" data-i18n="slideshow.bgMusic">Arka plan müzik (opsiyonel)</p>
           <input type="file" id="ssAudio" accept="audio/*" hidden>
-          <button id="ssAudioBtn" class="btn btn-small btn-outline">🎵 Müzik Seç</button>
+          <button id="ssAudioBtn" class="btn btn-small btn-outline" data-i18n="slideshow.selectMusic">🎵 Müzik Seç</button>
           <div id="ssAudioName" style="margin-top:0.3rem;font-size:0.85rem;color:var(--text-secondary)"></div>
         </div>
         <div class="convert-options" style="margin-bottom:0.8rem">
           <div class="option-group">
-            <label>Geçiş efekti</label>
+            <label data-i18n="slideshow.transitionLabel">Geçiş efekti</label>
             <select id="ssTransition" class="select-input" style="min-width:120px">
-              <option value="fade">Fade (Soldurma)</option>
-              <option value="slideleft">Kaydır Sol</option>
-              <option value="slideright">Kaydır Sağ</option>
-              <option value="slideup">Kaydır Yukarı</option>
-              <option value="slidedown">Kaydır Aşağı</option>
-              <option value="fadeblack">Fade Siyah</option>
+              <option value="fade" data-i18n="slideshow.fade">Fade (Soldurma)</option>
+              <option value="slideleft" data-i18n="slideshow.slideLeft">Kaydır Sol</option>
+              <option value="slideright" data-i18n="slideshow.slideRight">Kaydır Sağ</option>
+              <option value="slideup" data-i18n="slideshow.slideUp">Kaydır Yukarı</option>
+              <option value="slidedown" data-i18n="slideshow.slideDown">Kaydır Aşağı</option>
+              <option value="fadeblack" data-i18n="slideshow.fadeBlack">Fade Siyah</option>
             </select>
           </div>
           <div class="option-group">
-            <label>Foto başı (sn)</label>
+            <label data-i18n="slideshow.durationLabel">Foto başı (sn)</label>
             <input type="number" id="ssDuration" value="3" min="1" max="30" class="time-input" style="width:70px">
           </div>
           <div class="option-group">
-            <label>Çözünürlük</label>
+            <label data-i18n="slideshow.resolutionLabel">Çözünürlük</label>
             <select id="ssResolution" class="select-input" style="min-width:100px">
               <option value="1920x1080">1080p</option>
               <option value="1280x720" selected>720p</option>
@@ -486,15 +449,15 @@
           </div>
         </div>
         <div id="ssError" class="error-msg hidden"></div>
-        <button id="ssCreateBtn" class="btn btn-accent">🎬 Video Oluştur</button>
+        <button id="ssCreateBtn" class="btn btn-accent" data-i18n="slideshow.createBtn">🎬 Video Oluştur</button>
         <div id="ssProgress" class="progress-area hidden">
           <div class="progress-bar"><div id="ssProgressFill" class="progress-fill"></div></div>
-          <p id="ssProgressText">Video oluşturuluyor...</p>
-          <button id="ssCancelBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem">✖ İptal</button>
+          <p id="ssProgressText" data-i18n="slideshow.creating">Video oluşturuluyor...</p>
+          <button id="ssCancelBtn" class="btn btn-small btn-outline" style="margin-top:0.3rem" data-i18n="common.cancel">✖ İptal</button>
         </div>
         <div id="ssResult" class="hidden" style="margin-top:1rem;padding:0.8rem;background:rgba(51,255,119,0.08);border:1px solid var(--green);border-radius:10px">
-          <p style="color:var(--green);font-weight:600">✅ Video hazır!</p>
-          <button id="ssDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem">⬇ İndir MP4</button>
+          <p style="color:var(--green);font-weight:600" data-i18n="slideshow.ready">✅ Video hazır!</p>
+          <button id="ssDownloadBtn" class="btn btn-primary" style="margin-top:0.5rem" data-i18n="slideshow.downloadMp4">⬇ İndir MP4</button>
         </div>
       </div>
     </section>
@@ -511,8 +474,13 @@
       <span class="platform-tag dm">🎬 Dailymotion</span>
       <span class="platform-tag kick">🎙 Kick</span>
     </div>
+
+    <footer class="site-footer">
+      <a href="https://github.com/MARGINALBUTROOT/omnitool" target="_blank" rel="noopener noreferrer" data-i18n="footer.sourceCode">💻 Kaynak kodu GitHub'da</a>
+    </footer>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
